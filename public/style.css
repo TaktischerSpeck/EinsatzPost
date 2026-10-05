@@ -1,0 +1,6 @@
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; background: #f5f5f3; color: #1c2530; font-family: system-ui, sans-serif; }
+main { width: min(100%, 620px); padding: clamp(24px, 5vw, 48px); background: white; border-top: 5px solid #c33434; border-radius: 8px; box-shadow: 0 16px 48px #1c253010; }
+.eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .12em; color: #ad2929; }
+h1 { font-size: clamp(36px, 8vw, 60px); letter-spacing: -.04em; margin: 18px 0; }
+p { line-height: 1.65; }

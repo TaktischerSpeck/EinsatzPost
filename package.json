@@ -1,0 +1,14 @@
+{
+  "name": "einsatzpost",
+  "version": "0.1.0",
+  "private": true,
+  "description": "EinsatzPost – Feuerwehr-Einsatzgrafiken",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node app.js",
+    "dev": "node --watch app.js",
+    "check": "node --check app.js"
+  }
+}
