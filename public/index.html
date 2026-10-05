@@ -1,17 +1,40 @@
 <!doctype html>
 <html lang="de">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>EinsatzPost – Projektvorbereitung</title>
-  <link rel="stylesheet" href="/style.css">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#17343b">
+<title>EinsatzPost · Einsatzgrafiken</title><meta name="description" content="Einsatzgrafiken einfach erstellen. Feste Vorlage, sichere Abstände und Export für Instagram.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/style.css"><script type="module" src="/editor.js"></script>
 </head>
 <body>
-  <main>
-    <p class="eyebrow">FEUERWEHR · EINSATZGRAFIKEN</p>
-    <h1>EinsatzPost</h1>
-    <p>Die Node-Grundstruktur ist eingerichtet.</p>
-    <p>Die geplante Anwendung wird anhand der Projektanforderungen umgesetzt. Diese Seite ist ein Platzhalter.</p>
-  </main>
-</body>
-</html>
+<header class="app-header"><a href="/" class="wordmark"><span class="logo-mark" aria-hidden="true">E<span>↗</span></span><span>Einsatz<span class="brand-light">Post</span></span></a><div class="header-right"><span class="team-label">Für dein Feuerwehr-Team</span><button id="open-admin" class="button quiet" type="button">Einstellungen <span aria-hidden="true">⚙</span></button></div></header>
+<main>
+<section class="intro"><div><p class="eyebrow">WENIGER GESTALTEN. MEHR BERICHTEN.</p><h1>Ein Einsatz. Ein fertiger Post.</h1><p class="lead">Bild und Einsatzdaten rein. Alles sitzt an der richtigen Stelle.</p></div><span class="format-chip"><span class="dot"></span> Instagram · 4:5</span></section>
+<div id="boot-error" class="notice error" hidden></div>
+<div class="workspace">
+<section class="editor-panel" aria-labelledby="editor-heading">
+<div class="panel-heading"><h2 id="editor-heading">Dein Einsatz</h2><button type="button" class="text-button" id="reset">Neu beginnen ↗</button></div>
+<form id="post-form">
+<section class="form-section"><h3><span class="step">01</span>Einsatzdaten</h3>
+<div class="two-columns"><label>Einsatznummer<input id="number" name="number" inputmode="numeric" pattern="[0-9]{1,6}" maxlength="6" placeholder="z. B. 124" required></label><label>Datum<input id="date" name="date" type="date" required></label></div>
+<label>Einsatzkategorie<select id="category" name="category" required></select></label>
+<div class="keyword-note"><span class="lock-icon" aria-hidden="true">▣</span><div><span>Festes Einsatzstichwort</span><strong id="keyword-label">Wird geladen …</strong></div></div>
+<label>Kurzbeschreibung<textarea id="description" name="description" maxlength="200" rows="2" placeholder="z. B. Unterstützung des Rettungsdienstes" required></textarea><span class="field-help"><span>Schriftgröße passt sich automatisch an.</span><span id="char-count">0 / 200</span></span></label>
+<div id="preset-buttons" class="presets" aria-label="Textvorschläge"></div>
+<div class="two-columns"><label>Alarmierungszeit<input id="time" name="time" type="time" required></label><label>Einsatzort<input id="location" name="location" maxlength="100" placeholder="Ober-Ramstadt" required></label></div>
+</section>
+<section class="form-section"><h3><span class="step">02</span>Einsatzbild</h3>
+<label class="upload-zone" id="upload-zone" for="image-upload"><span class="upload-icon" aria-hidden="true">↥</span><strong id="image-label">Bild auswählen</strong><span>Antippen oder Bild hierher ziehen</span><small>JPG, PNG oder WebP · max. 20 MB</small><input id="image-upload" type="file" accept="image/jpeg,image/png,image/webp"></label>
+<details class="url-option"><summary>Bild über einen Link hinzufügen</summary><label>HTTPS-Bildadresse<input type="url" id="image-url" placeholder="https://…/bild.jpg"></label><button type="button" id="load-url" class="button secondary">Bild laden</button><p class="field-help">Der Bildanbieter muss CORS erlauben. Alternativ die Bilddatei auswählen.</p></details>
+<div id="crop-controls" hidden><div class="crop-title"><strong>Bildausschnitt</strong><button type="button" id="remove-image" class="text-button">Bild entfernen</button></div><p class="field-help">Nur das Bild lässt sich in der Vorschau verschieben. Der Rahmen bleibt fest.</p><label>Zoom<input id="zoom" type="range" min="1" max="3" step="0.01" value="1"></label><div class="two-columns"><label>Horizontal<input id="crop-x" type="range" min="0" max="1" step="0.01" value="0.5"></label><label>Vertikal<input id="crop-y" type="range" min="0" max="1" step="0.01" value="0.5"></label></div><button type="button" id="center-image" class="text-button">Ausschnitt zurücksetzen</button></div>
+<p class="privacy-note"><span aria-hidden="true">◈</span> Dein Bild bleibt auf diesem Gerät.</p>
+</section>
+<div class="draft-actions"><button type="button" id="save-draft" class="button secondary">Entwurf speichern</button><button type="button" id="load-draft" class="text-button">Entwurf laden</button><button type="button" id="delete-draft" class="text-button" hidden>Löschen</button></div><p class="field-help">Ein Entwurf pro Browser, inklusive Bild. Keine Synchronisierung zwischen Geräten.</p>
+</form>
+</section>
+<aside class="preview-panel" aria-labelledby="preview-heading"><div class="preview-top"><h2 id="preview-heading">Live-Vorschau</h2><span class="live-badge"><span class="dot"></span> Live</span></div><div class="canvas-stage"><canvas id="preview" width="1080" height="1350" aria-label="Vorschau der Einsatzgrafik">Vorschau der Einsatzgrafik</canvas></div><div class="preview-caption"><span>Feste Vorlage. Sichere Abstände.</span><span id="dimensions">1080 × 1350 px</span></div><div id="render-warning" class="notice error" hidden></div><div class="export-panel"><div class="export-heading"><h3><span class="step">03</span>Bereit zum Teilen</h3><span class="export-hint">Ohne Wasserzeichen</span></div><div class="two-columns"><label>Qualität<select id="resolution"><option value="1">Standard · 1080 × 1350</option><option value="2">Hoch · 2160 × 2700</option></select></label><label>Dateiformat<select id="file-format"><option value="image/png">PNG · verlustfrei</option><option value="image/jpeg">JPG · kleinere Datei</option></select></label></div><button type="button" class="button primary export-button" id="download" disabled>Grafik herunterladen <span aria-hidden="true">↓</span></button><button type="button" class="button secondary share-button" id="share" hidden>Grafik teilen</button><p class="field-help" id="export-help">Einsatzdaten ausfüllen und ein Bild hinzufügen.</p></div></aside>
+</div>
+<footer class="app-footer"><span>EinsatzPost <span class="footer-separator">/</span> Für alle, die anpacken.</span><span>Vorlage 4:5 · lokal gerendert</span></footer>
+</main>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+<dialog id="admin-dialog" aria-labelledby="admin-heading"><div class="dialog-heading"><div><p class="eyebrow">TEAM-EINSTELLUNGEN</p><h2 id="admin-heading">Vorlage verwalten</h2></div><button type="button" id="close-admin" class="icon-button" aria-label="Einstellungen schließen">×</button></div><p class="dialog-intro">Farben und Stichwörter gelten für das gesamte Team. Die Positionen der Vorlage bleiben fest.</p><form id="admin-form"><label>Admin-Schlüssel<input id="admin-token" type="password" autocomplete="off" placeholder="Schlüssel aus der Serverkonfiguration" required minlength="16"></label><p id="admin-disabled" class="notice" hidden>Die Verwaltung ist noch nicht eingerichtet. In Plesk ADMIN_TOKEN mit mindestens 16 Zeichen setzen.</p><label>Feuerwehrname<input id="admin-brand" maxlength="80" required></label><label>Fußzeile<input id="admin-footer" maxlength="120" required></label><div class="admin-section-heading"><h3>Einsatzkategorien</h3><button type="button" id="add-category" class="text-button">+ Kategorie</button></div><div id="category-rows"></div><label>Textvorschläge <span class="optional">(ein Vorschlag pro Zeile)</span><textarea id="admin-presets" rows="4"></textarea></label><div id="admin-error" class="notice error" hidden></div><div class="dialog-actions"><button type="button" id="cancel-admin" class="button secondary">Abbrechen</button><button type="submit" id="save-config" class="button primary">Einstellungen speichern</button></div></form></dialog>
+</body></html>

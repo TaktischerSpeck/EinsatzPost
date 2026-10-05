@@ -1,0 +1,14 @@
+{
+  "brand": "Feuerwehr Ober-Ramstadt",
+  "footer": "Freiwillige Feuerwehr · Gemeinsam für unsere Stadt",
+  "categories": [
+    { "code": "F1", "label": "Brand klein", "color": "#C83A35", "keyword": "Brandeinsatz" },
+    { "code": "F2", "label": "Brand mittel", "color": "#E17529", "keyword": "Brandeinsatz" },
+    { "code": "F3", "label": "Brand groß", "color": "#AD2430", "keyword": "Brandeinsatz" },
+    { "code": "H1", "label": "Hilfeleistung klein", "color": "#297B8D", "keyword": "Technische Hilfeleistung" },
+    { "code": "H2", "label": "Hilfeleistung mittel", "color": "#235CA1", "keyword": "Technische Hilfeleistung" },
+    { "code": "R1", "label": "Rettung", "color": "#797044", "keyword": "Anforderung Drehleiter" },
+    { "code": "R2", "label": "Rettung erweitert", "color": "#66528C", "keyword": "Anforderung Drehleiter" }
+  ],
+  "presets": ["Anforderung Drehleiter", "Ausgelöste Brandmeldeanlage", "Verkehrsunfall", "Unwettereinsatz", "Kleinbrand"]
+}
