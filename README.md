@@ -90,3 +90,8 @@ Dokumentation:
 7. Auf einem Smartphone testen.
 
 Die visuelle Browserprüfung war während der Entwicklung gesperrt und ist noch offen.
+
+## Hochkantbilder
+
+Hochkantbilder werden beim Hinzufügen automatisch vollständig und mittig dargestellt, mit weißen Seitenrändern. Unter Bilddarstellung kann jederzeit zwischen Ganzes Bild mit weißen Rändern und Rahmen füllen · Bild zuschneiden gewechselt werden. Im Modus Ganzes Bild sind Zoom und Verschieben deaktiviert, damit nichts abgeschnitten wird. Die Auswahl gilt für Vorschau, Export und gespeicherte Entwürfe. Ältere Entwürfe behalten ihre bisherige Zuschneidung.
+

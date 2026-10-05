@@ -53,3 +53,8 @@ Der Editor ist öffentlich erreichbar. Allgemeine Nutzeranmeldung, serverseitige
 Syntaxprüfung sowie API-Tests für Zugriffsschutz, ungültige Daten, Pfadzugriffe, Speicherung, Neustart, konkurrierende Änderungen und Begrenzung ungültiger Anmeldeversuche. Renderer-Tests prüfen Textanpassung, Überlauf, Crop-Grenzen und Exportmaße. GitHub Actions prüft Node 22 und 24 bei Push und Pull Request.
 
 Die visuelle Browserprüfung sowie echte Bildauswahl, Downloads und mobile Bedienung waren in der Entwicklungssitzung gesperrt und müssen nach dem Deployment geprüft werden.
+
+## Bilddarstellung
+
+Neue Hochkantbilder verwenden automatisch den Modus contain: vollständig, mittig, weiße freie Flächen. Über Bilddarstellung kann zwischen contain und cover umgeschaltet werden. contain ignoriert Zoom und Position und deaktiviert diese Bedienelemente. cover behält den bisherigen Crop. Der Modus wird mit dem Entwurf gespeichert; alte Entwürfe bleiben kompatibel.
+

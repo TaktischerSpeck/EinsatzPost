@@ -40,3 +40,36 @@ test('renders both export sizes and reports description overflow', async () => {
   assert.equal(canvas.width, 2160); assert.equal(canvas.height, 2700);
   assert.ok(renderPost(canvas, { ...state, description: 'W'.repeat(200) }, defaults, null).length > 0);
 });
+test('contain keeps portrait and landscape images complete and centered', async () => {
+  const { cropGeometry } = await load();
+  for (const image of [{ width: 600, height: 1200 }, { width: 1800, height: 400 }]) {
+    const geometry = cropGeometry(image, { mode: 'contain', x: 0, y: 1, zoom: 3 });
+    assert.ok(geometry.x >= 60); assert.ok(geometry.y >= 272);
+    assert.ok(geometry.x + geometry.width <= 1020 + .00001);
+    assert.ok(geometry.y + geometry.height <= 838 + .00001);
+    assert.ok(Math.abs(geometry.width / geometry.height - image.width / image.height) < .00001);
+    assert.ok(Math.abs(geometry.x + geometry.width / 2 - 540) < .00001);
+    assert.ok(Math.abs(geometry.y + geometry.height / 2 - 555) < .00001);
+  }
+  const portrait = cropGeometry({ width: 600, height: 1200 }, { mode: 'contain', zoom: 1, x: .5, y: .5 });
+  assert.equal(portrait.height, 566);
+  assert.equal(portrait.width, 283);
+});
+test('contain paints white margins and uses identical geometry in both export resolutions', async () => {
+  const { renderPost } = await load();
+  for (const scale of [1, 2]) {
+    const ctx = context(), fills = [], draws = [], scales = [];
+    ctx.fillRect = (...args) => fills.push({ color: ctx.fillStyle, args });
+    ctx.drawImage = (...args) => draws.push(args);
+    ctx.scale = (...args) => scales.push(args);
+    const canvas = { getContext: () => ctx };
+    const image = { width: 600, height: 1200 };
+    const state = { number: '1', date: '2026-10-05', time: '18:24', category: 'F1', description: 'Kleinbrand', location: 'Ober-Ramstadt', crop: { mode: 'contain', x: .5, y: .5, zoom: 3 } };
+    assert.deepEqual(renderPost(canvas, state, defaults, image, scale), []);
+    assert.ok(fills.some(fill => fill.color === '#ffffff' && JSON.stringify(fill.args) === '[60,272,960,566]'));
+    assert.deepEqual(draws[0], [image, 398.5, 272, 283, 566]);
+    assert.deepEqual(scales, [[scale, scale]]);
+    assert.equal(canvas.width, 1080 * scale);
+    assert.equal(canvas.height, 1350 * scale);
+  }
+});

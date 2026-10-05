@@ -37,6 +37,11 @@ function drawText(ctx, text, box, color, warnings, weight = 700) {
 }
 export function cropGeometry(image, crop) {
   const box = layout.photo, iw = image.naturalWidth || image.width, ih = image.naturalHeight || image.height;
+  if (crop.mode === 'contain') {
+    const scale = Math.min(box.width / iw, box.height / ih);
+    const width = iw * scale, height = ih * scale;
+    return { x: box.x + (box.width - width) / 2, y: box.y + (box.height - height) / 2, width, height };
+  }
   const scale = Math.max(box.width / iw, box.height / ih) * crop.zoom;
   const width = iw * scale, height = ih * scale;
   return { x: box.x - (width - box.width) * crop.x, y: box.y - (height - box.height) * crop.y, width, height };
@@ -61,7 +66,11 @@ export function renderPost(canvas, state, config, image, scale = 1) {
   ctx.textAlign = 'right'; ctx.fillText(dateLabel(state.date), 1020, 173); ctx.textAlign = 'left';
   const photo = layout.photo;
   ctx.save(); ctx.beginPath(); ctx.rect(photo.x, photo.y, photo.width, photo.height); ctx.clip();
-  if (image) { const crop = cropGeometry(image, state.crop); ctx.drawImage(image, crop.x, crop.y, crop.width, crop.height); }
+  if (image) {
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(photo.x, photo.y, photo.width, photo.height);
+    const crop = cropGeometry(image, state.crop);
+    ctx.drawImage(image, crop.x, crop.y, crop.width, crop.height);
+  }
   else {
     const gradient = ctx.createLinearGradient(60, 270, 1020, 838);
     gradient.addColorStop(0, '#254551'); gradient.addColorStop(1, '#10252e');

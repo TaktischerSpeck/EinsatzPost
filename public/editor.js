@@ -4,7 +4,7 @@ import { layout } from './layout.js';
 const $ = id => document.getElementById(id);
 const fields = ['number', 'date', 'category', 'description', 'time', 'location'];
 let config, revision = 0, image = null, imageBlob = null, imageName = '';
-let crop = { x: .5, y: .5, zoom: 1 };
+let crop = { x: .5, y: .5, zoom: 1, mode: 'cover' };
 let warnings = [], adminEnabled = false, toastTimer, busy = false, drag = null, imageGeneration = 0;
 const today = () => {
   const d = new Date();
@@ -27,7 +27,12 @@ function render() {
   $('download').disabled = !valid; $('share').disabled = !valid;
   $('export-help').textContent = warnings.length ? 'Bitte den markierten Text kürzen. Der Export bleibt gesperrt.' : valid ? 'Alles bereit. Der Export entspricht genau dieser Vorschau.' : 'Einsatzdaten ausfüllen und ein Bild hinzufügen.';
   $('crop-controls').hidden = !image;
-  $('preview').classList.toggle('has-image', !!image);
+  $('preview').classList.toggle('has-image', !!image && crop.mode !== 'contain');
+  $('image-fit').value = crop.mode || 'cover';
+  $('crop-adjustments').hidden = crop.mode === 'contain';
+  $('crop-help').textContent = crop.mode === 'contain'
+    ? 'Das gesamte Bild wird mittig gezeigt. Freie Flächen bleiben weiß; nichts wird abgeschnitten.'
+    : 'Nur das Bild lässt sich in der Vorschau verschieben. Der Rahmen bleibt fest.';
   $('image-label').textContent = image ? imageName : 'Bild auswählen';
 }
 function syncCrop() {
@@ -71,7 +76,7 @@ async function loadImage(blob, name, resetCrop = true) {
     finally { URL.revokeObjectURL(normalizedURL); }
     if (generation !== imageGeneration) return;
     image = finalImage; imageBlob = normalized; imageName = name || 'Einsatzbild';
-    if (resetCrop) crop = { x: .5, y: .5, zoom: 1 };
+    if (resetCrop) crop = { x: .5, y: .5, zoom: 1, mode: finalImage.naturalHeight > finalImage.naturalWidth ? 'contain' : 'cover' };
     syncCrop();
   } catch (error) {
     if (error.message.includes('Bild')) throw error;
@@ -161,9 +166,10 @@ $('load-url').addEventListener('click', async () => {
   finally { $('load-url').disabled = false; }
 });
 ['zoom', 'crop-x', 'crop-y'].forEach(id => $(id).addEventListener('input', () => {
-  crop = { x: Number($('crop-x').value), y: Number($('crop-y').value), zoom: Number($('zoom').value) }; render();
+  crop = { ...crop, x: Number($('crop-x').value), y: Number($('crop-y').value), zoom: Number($('zoom').value) }; render();
 }));
-$('center-image').addEventListener('click', () => { crop = { x: .5, y: .5, zoom: 1 }; syncCrop(); });
+$('image-fit').addEventListener('change', () => { drag = null; crop.mode = $('image-fit').value; render(); });
+$('center-image').addEventListener('click', () => { crop = { ...crop, x: .5, y: .5, zoom: 1 }; syncCrop(); });
 $('remove-image').addEventListener('click', () => { imageGeneration++; image = null; imageBlob = null; imageName = ''; render(); });
 const preview = $('preview');
 function pointer(event) {
@@ -172,7 +178,7 @@ function pointer(event) {
 }
 preview.addEventListener('pointerdown', event => {
   const point = pointer(event), box = layout.photo;
-  if (!image || point.x < box.x || point.x > box.x + box.width || point.y < box.y || point.y > box.y + box.height) return;
+  if (!image || crop.mode === 'contain' || point.x < box.x || point.x > box.x + box.width || point.y < box.y || point.y > box.y + box.height) return;
   drag = { point, crop: { ...crop }, geometry: cropGeometry(image, crop) };
   preview.setPointerCapture(event.pointerId);
 });
@@ -189,7 +195,7 @@ preview.addEventListener('pointermove', event => {
 $('reset').addEventListener('click', () => {
   if (!confirm('Aktuelle Eingaben und Bild zurücksetzen? Ein gespeicherter Entwurf bleibt erhalten.')) return;
   $('post-form').reset(); $('date').value = today(); imageGeneration++; image = null; imageBlob = null; imageName = '';
-  crop = { x: .5, y: .5, zoom: 1 }; syncCrop(); notify('Bereit für einen neuen Einsatz.');
+  crop = { x: .5, y: .5, zoom: 1, mode: 'cover' }; syncCrop(); notify('Bereit für einen neuen Einsatz.');
 });
 $('save-draft').addEventListener('click', async () => {
   try {
@@ -204,7 +210,7 @@ $('load-draft').addEventListener('click', async () => {
     if (!draft) return notify('Kein Entwurf vorhanden.');
     fields.forEach(id => { if (draft.state[id] !== undefined) $(id).value = draft.state[id]; });
     if (!config.categories.some(item => item.code === $('category').value)) $('category').value = config.categories[0].code;
-    crop = draft.state.crop || { x: .5, y: .5, zoom: 1 };
+    crop = { mode: 'cover', ...(draft.state.crop || { x: .5, y: .5, zoom: 1 }) };
     if (draft.blob) await loadImage(draft.blob, draft.name, false);
     else { imageGeneration++; image = null; imageBlob = null; imageName = ''; }
     syncCrop(); notify('Entwurf geladen.');
