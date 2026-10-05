@@ -15,7 +15,24 @@ function validateConfig(input) {
     return { code: item.code, label: item.label.trim(), keyword: item.keyword.trim(), color: item.color };
   });
   if (!input.presets.every(item => text(item, 100))) throw new Error('Invalid preset');
-  return { brand: input.brand.trim(), footer: input.footer.trim(), categories, presets: input.presets.map(item => item.trim()) };
+  // Supply new fields for configurations saved before colors and vehicles existed.
+  const rawColors = input.colors === undefined ? defaults.colors : input.colors;
+  if (!rawColors || typeof rawColors !== 'object' || Array.isArray(rawColors)) throw new Error('Invalid colors');
+  const colors = Object.fromEntries(Object.keys(defaults.colors).map(key => {
+    const value = rawColors[key] === undefined ? defaults.colors[key] : rawColors[key];
+    if (!/^#[a-f0-9]{6}$/i.test(value)) throw new Error('Invalid color');
+    return [key, value];
+  }));
+  const rawVehicles = input.vehicles === undefined ? defaults.vehicles : input.vehicles;
+  if (!Array.isArray(rawVehicles) || rawVehicles.length > 40) throw new Error('Invalid vehicles');
+  const vehicles = rawVehicles.map(value => {
+    if (typeof value !== 'string') throw new Error('Invalid vehicle');
+    const code = value.trim().toUpperCase();
+    if (!/^[A-Z0-9][A-Z0-9 /_-]{0,15}$/.test(code)) throw new Error('Invalid vehicle');
+    return code;
+  });
+  if (new Set(vehicles).size !== vehicles.length) throw new Error('Duplicate vehicle');
+  return { brand: input.brand.trim(), footer: input.footer.trim(), colors, vehicles, categories, presets: input.presets.map(item => item.trim()) };
 }
 
 function createServer(options = {}) {

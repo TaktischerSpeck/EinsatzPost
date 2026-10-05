@@ -1,6 +1,8 @@
 {
   "brand": "Feuerwehr Ober-Ramstadt",
   "footer": "Freiwillige Feuerwehr · Gemeinsam für unsere Stadt",
+  "colors": { "background": "#F8F7F3", "header": "#142831", "footer": "#142831" },
+  "vehicles": ["HLF20", "ELW"],
   "categories": [
     { "code": "F1", "label": "Brand klein", "color": "#C83A35", "keyword": "Brandeinsatz" },
     { "code": "F2", "label": "Brand mittel", "color": "#E17529", "keyword": "Brandeinsatz" },

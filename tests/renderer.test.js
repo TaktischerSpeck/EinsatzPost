@@ -73,3 +73,26 @@ test('contain paints white margins and uses identical geometry in both export re
     assert.equal(canvas.height, 1350 * scale);
   }
 });
+test('renders custom backgrounds, selected vehicles, a large year and a yearless date', async () => {
+  const { renderPost, dateLabel } = await load();
+  assert.equal(dateLabel('2026-10-05'), '05.10');
+  const config = structuredClone(defaults);
+  config.colors = { background: '#112233', header: '#eeeeee', footer: '#abcdef' };
+  config.vehicles = ['HLF20', 'ELW', 'DLK23/12'];
+  for (const scale of [1, 2]) {
+    const ctx = context(), fills = [], texts = [];
+    ctx.fillRect = (...args) => fills.push({ color: ctx.fillStyle, args });
+    ctx.fillText = (...args) => texts.push({ args, color: ctx.fillStyle, font: ctx.font });
+    const state = { number: '124', date: '2026-10-05', time: '18:24', category: 'F1', description: 'Kleinbrand', location: 'Ober-Ramstadt', vehicles: ['ELW', 'HLF20', 'UNKNOWN'], crop: { mode: 'contain', x: .5, y: .5, zoom: 1 } };
+    assert.deepEqual(renderPost({ getContext: () => ctx }, state, config, null, scale), []);
+    for (const color of Object.values(config.colors)) assert.ok(fills.some(fill => fill.color === color));
+    const year = texts.find(text => text.args[0] === '2026');
+    assert.deepEqual(year.args, ['2026', 1020, 102]); assert.match(year.font, /58px/);
+    assert.ok(texts.some(text => JSON.stringify(text.args) === '["05.10",1020,173]'));
+    assert.ok(!texts.some(text => text.args[0] === '05.10.2026'));
+    assert.ok(texts.some(text => text.args[0] === 'FAHRZEUGE · HLF20 · ELW'));
+    assert.ok(!texts.some(text => text.args[0].includes('UNKNOWN')));
+    assert.equal(texts.find(text => text.args[0] === 'Kleinbrand').color, '#ffffff');
+    assert.equal(year.color, '#12222b');
+  }
+});

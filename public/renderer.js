@@ -47,7 +47,7 @@ export function cropGeometry(image, crop) {
   return { x: box.x - (width - box.width) * crop.x, y: box.y - (height - box.height) * crop.y, width, height };
 }
 export function dateLabel(value) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value.split('-').reverse().join('.') : 'Datum auswählen';
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value.slice(5).split('-').reverse().join('.') : 'Datum auswählen';
 }
 function readableColor(hex) {
   const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255).map(v => v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4);
@@ -57,12 +57,17 @@ export function renderPost(canvas, state, config, image, scale = 1) {
   canvas.width = layout.width * scale; canvas.height = layout.height * scale;
   const ctx = canvas.getContext('2d'); ctx.scale(scale, scale);
   const warnings = [], category = config.categories.find(item => item.code === state.category) || config.categories[0];
-  ctx.fillStyle = '#f8f7f3'; ctx.fillRect(0, 0, layout.width, layout.height);
-  ctx.fillStyle = '#142831'; ctx.fillRect(0, 0, layout.width, 245);
+  const colors = { background: '#F8F7F3', header: '#142831', footer: '#142831', ...config.colors };
+  const textColor = readableColor(colors.background), headerText = readableColor(colors.header), footerText = readableColor(colors.footer);
+  ctx.fillStyle = colors.background; ctx.fillRect(0, 0, layout.width, layout.height);
+  ctx.fillStyle = colors.header; ctx.fillRect(0, 0, layout.width, 245);
   ctx.fillStyle = category.color; ctx.fillRect(0, 0, layout.width, 12);
-  drawText(ctx, config.brand.toUpperCase(), { x: 60, y: 59, width: 960, height: 45, maxSize: 30, minSize: 18, maxLines: 1 }, '#c6d4d6', warnings);
-  drawText(ctx, 'EINSATZ ' + (state.number || '—'), { x: 60, y: 132, width: 570, height: 65, maxSize: 52, minSize: 24, maxLines: 1 }, '#ffffff', warnings);
-  ctx.fillStyle = '#c6d4d6'; ctx.font = '400 30px ' + fontFamily;
+  drawText(ctx, config.brand.toUpperCase(), { x: 60, y: 59, width: 690, height: 45, maxSize: 30, minSize: 14, maxLines: 1 }, headerText, warnings);
+  const year = /^\d{4}-\d{2}-\d{2}$/.test(state.date) ? state.date.slice(0, 4) : '—';
+  ctx.fillStyle = headerText; ctx.font = '700 58px ' + fontFamily;
+  ctx.textAlign = 'right'; ctx.fillText(year, 1020, 102); ctx.textAlign = 'left';
+  drawText(ctx, 'EINSATZ ' + (state.number || '—'), { x: 60, y: 132, width: 570, height: 65, maxSize: 52, minSize: 24, maxLines: 1 }, headerText, warnings);
+  ctx.fillStyle = headerText; ctx.font = '400 30px ' + fontFamily;
   ctx.textAlign = 'right'; ctx.fillText(dateLabel(state.date), 1020, 173); ctx.textAlign = 'left';
   const photo = layout.photo;
   ctx.save(); ctx.beginPath(); ctx.rect(photo.x, photo.y, photo.width, photo.height); ctx.clip();
@@ -83,13 +88,15 @@ export function renderPost(canvas, state, config, image, scale = 1) {
   ctx.restore();
   ctx.fillStyle = category.color; ctx.fillRect(84, 752, 126, 62);
   ctx.fillStyle = readableColor(category.color); ctx.font = '700 32px ' + fontFamily; ctx.textAlign = 'center'; ctx.fillText(category.code, 147, 794); ctx.textAlign = 'left';
-  drawText(ctx, state.description || 'Kurzbeschreibung des Einsatzes', layout.description, '#142831', warnings);
+  drawText(ctx, state.description || 'Kurzbeschreibung des Einsatzes', layout.description, textColor, warnings);
   drawText(ctx, category.keyword, layout.keyword, category.color, warnings, 600);
-  ctx.strokeStyle = '#d3d9d6'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(60, 1139); ctx.lineTo(1020, 1139); ctx.stroke();
-  ctx.fillStyle = '#64787c'; ctx.font = '700 19px ' + fontFamily; ctx.fillText('ALARMIERUNG', 60, 1174); ctx.fillText('EINSATZORT', 235, 1174);
-  ctx.fillStyle = '#142831'; ctx.font = '700 30px ' + fontFamily; ctx.fillText(state.time ? state.time + ' Uhr' : '—', 60, 1214);
-  drawText(ctx, state.location || 'Einsatzort', layout.location, '#142831', warnings, 600);
-  ctx.fillStyle = '#142831'; ctx.fillRect(0, 1280, 1080, 70);
-  drawText(ctx, config.footer, { x: 60, y: 1302, width: 960, height: 28, maxSize: 21, minSize: 13, maxLines: 1 }, '#dae4e3', warnings, 400);
+  const selectedVehicles = (config.vehicles || []).filter(code => (state.vehicles || []).includes(code));
+  if (selectedVehicles.length) drawText(ctx, 'FAHRZEUGE · ' + selectedVehicles.join(' · '), layout.vehicles, textColor, warnings, 600);
+  ctx.strokeStyle = textColor; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(60, 1139); ctx.lineTo(1020, 1139); ctx.stroke();
+  ctx.fillStyle = textColor; ctx.font = '700 19px ' + fontFamily; ctx.fillText('ALARMIERUNG', 60, 1174); ctx.fillText('EINSATZORT', 235, 1174);
+  ctx.fillStyle = textColor; ctx.font = '700 30px ' + fontFamily; ctx.fillText(state.time ? state.time + ' Uhr' : '—', 60, 1214);
+  drawText(ctx, state.location || 'Einsatzort', layout.location, textColor, warnings, 600);
+  ctx.fillStyle = colors.footer; ctx.fillRect(0, 1280, 1080, 70);
+  drawText(ctx, config.footer, { x: 60, y: 1302, width: 960, height: 28, maxSize: 21, minSize: 13, maxLines: 1 }, footerText, warnings, 400);
   return warnings;
 }

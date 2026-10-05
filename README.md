@@ -95,3 +95,12 @@ Die visuelle Browserprüfung war während der Entwicklung gesperrt und ist noch 
 
 Hochkantbilder werden beim Hinzufügen automatisch vollständig und mittig dargestellt, mit weißen Seitenrändern. Unter Bilddarstellung kann jederzeit zwischen Ganzes Bild mit weißen Rändern und Rahmen füllen · Bild zuschneiden gewechselt werden. Im Modus Ganzes Bild sind Zoom und Verschieben deaktiviert, damit nichts abgeschnitten wird. Die Auswahl gilt für Vorschau, Export und gespeicherte Entwürfe. Ältere Entwürfe behalten ihre bisherige Zuschneidung.
 
+
+## Hintergrundfarben, Fahrzeuge und Jahr
+
+In den Team-Einstellungen lassen sich Grundfläche, Kopfbereich und Fußzeile der Einsatzgrafik separat einfärben. Die Schriftfarbe passt sich an helle oder dunkle Hintergründe an. Die weißen Ränder bei Hochkantbildern bleiben weiß.
+
+Fahrzeugkürzel werden als erweiterbare Liste hinterlegt (ein Kürzel pro Zeile, z. B. HLF20, ELW oder DLK23/12). Im Einsatzformular können mehrere Fahrzeuge ausgewählt werden; die Kürzel erscheinen unter dem Einsatzstichwort und werden mit dem Entwurf gespeichert. Ohne Auswahl bleibt die Fahrzeugzeile leer.
+
+Das Jahr wird aus dem Einsatzdatum übernommen und rechts oben groß gezeigt. Das Datum an der bisherigen Position enthält nur Tag und Monat. Bereits gespeicherte Team-Einstellungen werden automatisch um die neuen Standardwerte ergänzt, vorhandene Farben der Kategorien bleiben erhalten.
+

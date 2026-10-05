@@ -5,12 +5,13 @@ const $ = id => document.getElementById(id);
 const fields = ['number', 'date', 'category', 'description', 'time', 'location'];
 let config, revision = 0, image = null, imageBlob = null, imageName = '';
 let crop = { x: .5, y: .5, zoom: 1, mode: 'cover' };
+let vehicles = [];
 let warnings = [], adminEnabled = false, toastTimer, busy = false, drag = null, imageGeneration = 0;
 const today = () => {
   const d = new Date();
   return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
 };
-const state = () => ({ ...Object.fromEntries(fields.map(id => [id, $(id).value])), crop: { ...crop } });
+const state = () => ({ ...Object.fromEntries(fields.map(id => [id, $(id).value])), crop: { ...crop }, vehicles: [...vehicles] });
 function notify(message) {
   $('toast').textContent = message; $('toast').hidden = false;
   clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').hidden = true; }, 4500);
@@ -25,7 +26,7 @@ function render() {
   errorAt('render-warning', warnings.join(' '));
   const valid = $('post-form').checkValidity() && !!image && !warnings.length && !busy;
   $('download').disabled = !valid; $('share').disabled = !valid;
-  $('export-help').textContent = warnings.length ? 'Bitte den markierten Text kürzen. Der Export bleibt gesperrt.' : valid ? 'Alles bereit. Der Export entspricht genau dieser Vorschau.' : 'Einsatzdaten ausfüllen und ein Bild hinzufügen.';
+  $('export-help').textContent = warnings.length ? 'Bitte Text kürzen oder weniger Fahrzeuge auswählen. Der Export bleibt gesperrt.' : valid ? 'Alles bereit. Der Export entspricht genau dieser Vorschau.' : 'Einsatzdaten ausfüllen und ein Bild hinzufügen.';
   $('crop-controls').hidden = !image;
   $('preview').classList.toggle('has-image', !!image && crop.mode !== 'contain');
   $('image-fit').value = crop.mode || 'cover';
@@ -49,7 +50,22 @@ function populateConfig() {
     button.addEventListener('click', () => { $('description').value = text; render(); });
     return button;
   }));
+  populateVehicles();
   render();
+}
+function populateVehicles() {
+  vehicles = vehicles.filter(code => config.vehicles.includes(code));
+  $('vehicle-options').replaceChildren(...config.vehicles.map(code => {
+    const label = document.createElement('label'); label.className = 'vehicle-option';
+    const input = document.createElement('input'); input.type = 'checkbox'; input.value = code; input.checked = vehicles.includes(code);
+    const caption = document.createElement('span'); caption.textContent = code;
+    input.addEventListener('change', () => {
+      vehicles = input.checked ? [...vehicles, code] : vehicles.filter(item => item !== code);
+      render();
+    });
+    label.append(input, caption); return label;
+  }));
+  $('vehicles-empty').hidden = config.vehicles.length > 0;
 }
 
 async function loadImage(blob, name, resetCrop = true) {
@@ -195,6 +211,7 @@ preview.addEventListener('pointermove', event => {
 $('reset').addEventListener('click', () => {
   if (!confirm('Aktuelle Eingaben und Bild zurücksetzen? Ein gespeicherter Entwurf bleibt erhalten.')) return;
   $('post-form').reset(); $('date').value = today(); imageGeneration++; image = null; imageBlob = null; imageName = '';
+  vehicles = []; populateVehicles();
   crop = { x: .5, y: .5, zoom: 1, mode: 'cover' }; syncCrop(); notify('Bereit für einen neuen Einsatz.');
 });
 $('save-draft').addEventListener('click', async () => {
@@ -210,6 +227,7 @@ $('load-draft').addEventListener('click', async () => {
     if (!draft) return notify('Kein Entwurf vorhanden.');
     fields.forEach(id => { if (draft.state[id] !== undefined) $(id).value = draft.state[id]; });
     if (!config.categories.some(item => item.code === $('category').value)) $('category').value = config.categories[0].code;
+    vehicles = Array.isArray(draft.state.vehicles) ? draft.state.vehicles : []; populateVehicles();
     crop = { mode: 'cover', ...(draft.state.crop || { x: .5, y: .5, zoom: 1 }) };
     if (draft.blob) await loadImage(draft.blob, draft.name, false);
     else { imageGeneration++; image = null; imageBlob = null; imageName = ''; }
@@ -263,6 +281,8 @@ function categoryRow(item) {
 $('open-admin').addEventListener('click', () => {
   if (!config) return;
   $('admin-brand').value = config.brand; $('admin-footer').value = config.footer; $('admin-presets').value = config.presets.join('\n');
+  for (const key of ['background', 'header', 'footer']) $('admin-color-' + key).value = config.colors[key];
+  $('admin-vehicles').value = config.vehicles.join('\n');
   $('category-rows').replaceChildren(...config.categories.map(categoryRow));
   $('admin-token').value = ''; $('admin-disabled').hidden = adminEnabled; $('save-config').disabled = !adminEnabled;
   errorAt('admin-error', ''); $('admin-dialog').showModal();
@@ -277,7 +297,12 @@ $('add-category').addEventListener('click', () => {
 $('admin-form').addEventListener('submit', async event => {
   event.preventDefault(); errorAt('admin-error', '');
   const categories = [...$('category-rows').children].map(row => Object.fromEntries([...row.querySelectorAll('[data-field]')].map(input => [input.dataset.field, input.value])));
-  const nextConfig = { brand: $('admin-brand').value, footer: $('admin-footer').value, categories, presets: $('admin-presets').value.split('\n').map(s => s.trim()).filter(Boolean) };
+  const nextConfig = {
+    brand: $('admin-brand').value, footer: $('admin-footer').value, categories,
+    presets: $('admin-presets').value.split('\n').map(s => s.trim()).filter(Boolean),
+    colors: Object.fromEntries(['background', 'header', 'footer'].map(key => [key, $('admin-color-' + key).value])),
+    vehicles: $('admin-vehicles').value.split('\n').map(s => s.trim().toUpperCase()).filter(Boolean)
+  };
   $('save-config').disabled = true;
   try {
     const response = await fetch('/api/config', { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + $('admin-token').value }, body: JSON.stringify({ config: nextConfig, revision }) });

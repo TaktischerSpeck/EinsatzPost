@@ -58,3 +58,10 @@ Die visuelle Browserprüfung sowie echte Bildauswahl, Downloads und mobile Bedie
 
 Neue Hochkantbilder verwenden automatisch den Modus contain: vollständig, mittig, weiße freie Flächen. Über Bilddarstellung kann zwischen contain und cover umgeschaltet werden. contain ignoriert Zoom und Position und deaktiviert diese Bedienelemente. cover behält den bisherigen Crop. Der Modus wird mit dem Entwurf gespeichert; alte Entwürfe bleiben kompatibel.
 
+
+## Farben und Fahrzeuge
+
+config.colors enthält background, header und footer. Kontrastfarbe für Beschriftungen wird aus dem jeweiligen Hintergrund berechnet. config.vehicles enthält maximal 40 eindeutige Fahrzeugkürzel mit maximal 16 Zeichen. Mehrfachauswahl in state.vehicles erscheint unter dem Stichwort. Farben, Fahrzeugliste und Auswahl gelten für beide Exportgrößen; die Auswahl wird mit dem lokalen Entwurf gespeichert. Alte Konfigurationen und Entwürfe bleiben lesbar.
+
+Das Jahr steht mit 58 Pixeln Schriftgröße rechts oben. Das Datum bleibt an seiner bisherigen Position mit 30 Pixeln und enthält nur Tag und Monat.
+

@@ -4,5 +4,6 @@ export const layout = Object.freeze({
   photo: { x: 60, y: 272, width: 960, height: 566 },
   description: { x: 60, y: 895, width: 960, height: 146, maxSize: 66, minSize: 28, maxLines: 2 },
   keyword: { x: 60, y: 1060, width: 960, height: 48, maxSize: 34, minSize: 18, maxLines: 1 },
+  vehicles: { x: 60, y: 1111, width: 960, height: 26, maxSize: 20, minSize: 14, maxLines: 1 },
   location: { x: 235, y: 1191, width: 785, height: 60, maxSize: 30, minSize: 16, maxLines: 2 }
 });
