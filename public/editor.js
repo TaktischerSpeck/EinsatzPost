@@ -1,17 +1,21 @@
 import { renderPost, cropGeometry } from './renderer.js';
 import { layout } from './layout.js';
+import { generateCaption, placeholders } from './caption.js';
 
 const $ = id => document.getElementById(id);
-const fields = ['number', 'date', 'category', 'description', 'time', 'location'];
+const fields = ['number', 'date', 'category', 'description', 'time', 'location', 'externalResources'];
 let config, revision = 0, image = null, imageBlob = null, imageName = '';
 let crop = { x: .5, y: .5, zoom: 1, mode: 'cover' };
 let vehicles = [];
+let backgroundImage = null, adminBackgroundData = '', captionCustomized = false, backgroundGeneration = 0;
+let adminBackgroundGeneration = 0;
 let warnings = [], adminEnabled = false, toastTimer, busy = false, drag = null, imageGeneration = 0;
 const today = () => {
   const d = new Date();
   return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
 };
-const state = () => ({ ...Object.fromEntries(fields.map(id => [id, $(id).value])), crop: { ...crop }, vehicles: [...vehicles] });
+const state = () => ({ ...Object.fromEntries(fields.map(id => [id, $(id).value])), crop: { ...crop }, vehicles: [...vehicles],
+  captionTemplate: $('caption-template').value, hideEmptyLines: $('hide-empty-lines').checked });
 function notify(message) {
   $('toast').textContent = message; $('toast').hidden = false;
   clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').hidden = true; }, 4500);
@@ -19,7 +23,8 @@ function notify(message) {
 function errorAt(id, message) { $(id).textContent = message; $(id).hidden = !message; }
 function render() {
   if (!config) return;
-  warnings = renderPost($('preview'), state(), config, image);
+  warnings = renderPost($('preview'), state(), config, image, 1, backgroundImage);
+  renderCaption();
   const category = config.categories.find(item => item.code === $('category').value) || config.categories[0];
   $('keyword-label').textContent = category.keyword;
   $('char-count').textContent = $('description').value.length + ' / 200';
@@ -51,7 +56,38 @@ function populateConfig() {
     return button;
   }));
   populateVehicles();
+  if (!captionCustomized) $('caption-template').value = config.captionTemplate;
+  $('external-options').replaceChildren(...config.externalResources.map(name => {
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'preset'; button.textContent = name;
+    button.addEventListener('click', () => {
+      const current = $('externalResources').value.split(/[,\n]/).map(value => value.trim()).filter(Boolean);
+      if (!current.includes(name)) current.push(name);
+      const text = current.join(', ');
+      if (text.length > 500) return notify('Weitere Kräfte dürfen höchstens 500 Zeichen enthalten.');
+      $('externalResources').value = text; render();
+    });
+    return button;
+  }));
   render();
+}
+function renderCaption() {
+  const result = generateCaption($('caption-template').value, state(), config, $('hide-empty-lines').checked);
+  $('caption-preview').value = result.text;
+  errorAt('caption-error', result.unknown.length ? 'Unbekannte Platzhalter: ' + result.unknown.map(key => '{' + key + '}').join(', ') : '');
+  $('copy-caption').disabled = !result.text || result.unknown.length > 0;
+  $('caption-length').textContent = result.text.length + ' Zeichen';
+}
+async function loadConfiguredBackground() {
+  const generation = ++backgroundGeneration;
+  if (!config.background.imageData) { backgroundImage = null; return; }
+  const loaded = new Image();
+  try {
+    loaded.src = config.background.imageData; await loaded.decode();
+    if (generation === backgroundGeneration) backgroundImage = loaded;
+  } catch {
+    if (generation === backgroundGeneration) backgroundImage = null;
+    notify('Das gespeicherte Hintergrundbild ist nicht lesbar. Bitte in den Einstellungen erneut hochladen.');
+  }
 }
 function populateVehicles() {
   vehicles = vehicles.filter(code => config.vehicles.includes(code));
@@ -134,7 +170,7 @@ async function exportBlob() {
   if (!image) throw new Error('Bitte ein Einsatzbild hinzufügen.');
   if (warnings.length) throw new Error('Bitte den Text kürzen.');
   const canvas = document.createElement('canvas');
-  const exportWarnings = renderPost(canvas, state(), config, image, Number($('resolution').value));
+  const exportWarnings = renderPost(canvas, state(), config, image, Number($('resolution').value), backgroundImage);
   if (exportWarnings.length) throw new Error('Text passt nicht vollständig in die Vorlage.');
   const blob = await new Promise(resolve => canvas.toBlob(resolve, $('file-format').value, .94));
   if (!blob) throw new Error('Der Export konnte nicht erstellt werden.');
@@ -143,6 +179,61 @@ async function exportBlob() {
 function filename() {
   return 'EinsatzPost-' + $('date').value + '-' + $('number').value + '-' + $('category').value + ($('file-format').value === 'image/jpeg' ? '.jpg' : '.png');
 }
+function populateTokens(containerId, textareaId) {
+  $(containerId).replaceChildren(...placeholders.map(([key, label]) => {
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'preset'; button.textContent = '{' + key + '}'; button.title = label;
+    button.addEventListener('click', () => {
+      const textarea = $(textareaId), token = '{' + key + '}';
+      if (textarea.value.length + token.length - (textarea.selectionEnd - textarea.selectionStart) > 5000) return notify('Die Vorlage darf höchstens 5000 Zeichen enthalten.');
+      textarea.setRangeText(token, textarea.selectionStart, textarea.selectionEnd, 'end'); textarea.focus();
+      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    return button;
+  }));
+}
+$('caption-template').addEventListener('input', () => { captionCustomized = $('caption-template').value !== config?.captionTemplate; if (config) renderCaption(); });
+$('hide-empty-lines').addEventListener('change', () => { if (config) renderCaption(); });
+$('reset-caption').addEventListener('click', () => { if (!config) return; captionCustomized = false; $('caption-template').value = config.captionTemplate; renderCaption(); });
+$('copy-caption').addEventListener('click', async () => {
+  try {
+    if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
+    await navigator.clipboard.writeText($('caption-preview').value); notify('Einsatztext kopiert. Du kannst ihn jetzt in deinen Beitrag einfügen.');
+  } catch {
+    $('caption-preview').focus(); $('caption-preview').select();
+    notify('Automatisches Kopieren ist hier nicht möglich. Der Text ist markiert; bitte über das Browser-Menü kopieren.');
+  }
+});
+populateTokens('caption-tokens', 'caption-template');
+populateTokens('admin-caption-tokens', 'admin-caption-template');
+
+function updateBackgroundPreview() {
+  $('admin-background-preview').hidden = !adminBackgroundData;
+  $('remove-background').disabled = !adminBackgroundData;
+  if (adminBackgroundData) $('admin-background-preview').src = adminBackgroundData;
+  else $('admin-background-preview').removeAttribute('src');
+}
+$('admin-background-upload').addEventListener('change', async event => {
+  const file = event.target.files[0]; event.target.value = '';
+  if (!file) return;
+  const generation = ++adminBackgroundGeneration;
+  $('save-config').disabled = true;
+  const url = URL.createObjectURL(file), loaded = new Image();
+  try {
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type) || file.size > 20 * 1024 * 1024) throw new Error('Bitte JPG, PNG oder WebP bis 20 MB wählen.');
+    loaded.src = url; await loaded.decode();
+    if (!loaded.naturalWidth || loaded.naturalWidth * loaded.naturalHeight > 80000000) throw new Error('Bild ist zu groß. Bitte vorher verkleinern.');
+    const factor = Math.min(1, 1200 / Math.max(loaded.naturalWidth, loaded.naturalHeight)), canvas = document.createElement('canvas');
+    canvas.width = Math.round(loaded.naturalWidth * factor); canvas.height = Math.round(loaded.naturalHeight * factor);
+    const ctx = canvas.getContext('2d'); ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(loaded, 0, 0, canvas.width, canvas.height);
+    const data = canvas.toDataURL('image/jpeg', .85);
+    if (data.length > 1500000) throw new Error('Hintergrund ist zu groß. Bitte ein kleineres Bild wählen.');
+    if (generation !== adminBackgroundGeneration) return;
+    adminBackgroundData = data; updateBackgroundPreview(); notify('Hintergrund vorbereitet. Mit Einstellungen speichern übernehmen.');
+  } catch (error) { notify(error.message || 'Hintergrundbild konnte nicht gelesen werden.'); }
+  finally { URL.revokeObjectURL(url); if (generation === adminBackgroundGeneration) $('save-config').disabled = !adminEnabled; }
+});
+$('remove-background').addEventListener('click', () => { adminBackgroundGeneration++; adminBackgroundData = ''; updateBackgroundPreview(); $('save-config').disabled = !adminEnabled; });
 
 fields.forEach(id => $(id).addEventListener('input', render));
 $('post-form').addEventListener('submit', event => event.preventDefault());
@@ -212,6 +303,8 @@ $('reset').addEventListener('click', () => {
   if (!confirm('Aktuelle Eingaben und Bild zurücksetzen? Ein gespeicherter Entwurf bleibt erhalten.')) return;
   $('post-form').reset(); $('date').value = today(); imageGeneration++; image = null; imageBlob = null; imageName = '';
   vehicles = []; populateVehicles();
+  captionCustomized = false; $('caption-template').value = config.captionTemplate;
+  $('hide-empty-lines').checked = true;
   crop = { x: .5, y: .5, zoom: 1, mode: 'cover' }; syncCrop(); notify('Bereit für einen neuen Einsatz.');
 });
 $('save-draft').addEventListener('click', async () => {
@@ -225,9 +318,12 @@ $('load-draft').addEventListener('click', async () => {
   try {
     const draft = await draftOperation('readonly', store => store.get('current'));
     if (!draft) return notify('Kein Entwurf vorhanden.');
-    fields.forEach(id => { if (draft.state[id] !== undefined) $(id).value = draft.state[id]; });
+    fields.forEach(id => { $(id).value = draft.state[id] ?? ''; });
     if (!config.categories.some(item => item.code === $('category').value)) $('category').value = config.categories[0].code;
     vehicles = Array.isArray(draft.state.vehicles) ? draft.state.vehicles : []; populateVehicles();
+    $('caption-template').value = typeof draft.state.captionTemplate === 'string' ? draft.state.captionTemplate : config.captionTemplate;
+    captionCustomized = $('caption-template').value !== config.captionTemplate;
+    $('hide-empty-lines').checked = draft.state.hideEmptyLines !== false;
     crop = { mode: 'cover', ...(draft.state.crop || { x: .5, y: .5, zoom: 1 }) };
     if (draft.blob) await loadImage(draft.blob, draft.name, false);
     else { imageGeneration++; image = null; imageBlob = null; imageName = ''; }
@@ -283,13 +379,21 @@ $('open-admin').addEventListener('click', () => {
   $('admin-brand').value = config.brand; $('admin-footer').value = config.footer; $('admin-presets').value = config.presets.join('\n');
   for (const key of ['background', 'header', 'footer']) $('admin-color-' + key).value = config.colors[key];
   $('admin-vehicles').value = config.vehicles.join('\n');
+  $('admin-external').value = config.externalResources.join('\n');
+  $('admin-caption-template').value = config.captionTemplate;
+  $('admin-gradient-enabled').checked = config.background.gradientEnabled;
+  $('admin-gradient-start').value = config.background.gradientStart;
+  $('admin-gradient-end').value = config.background.gradientEnd;
+  $('admin-gradient-angle').value = config.background.gradientAngle;
+  $('admin-background-opacity').value = config.background.imageOpacity;
+  adminBackgroundGeneration++; adminBackgroundData = config.background.imageData; updateBackgroundPreview();
   $('category-rows').replaceChildren(...config.categories.map(categoryRow));
   $('admin-token').value = ''; $('admin-disabled').hidden = adminEnabled; $('save-config').disabled = !adminEnabled;
   errorAt('admin-error', ''); $('admin-dialog').showModal();
 });
-function closeAdmin() { $('admin-token').value = ''; $('admin-dialog').close(); }
+function closeAdmin() { adminBackgroundGeneration++; $('admin-token').value = ''; $('admin-dialog').close(); }
 ['close-admin', 'cancel-admin'].forEach(id => $(id).addEventListener('click', closeAdmin));
-$('admin-dialog').addEventListener('close', () => { $('admin-token').value = ''; });
+$('admin-dialog').addEventListener('close', () => { adminBackgroundGeneration++; $('admin-token').value = ''; });
 $('add-category').addEventListener('click', () => {
   if ($('category-rows').children.length >= 40) return notify('Maximal 40 Kategorien möglich.');
   $('category-rows').append(categoryRow({ code: '', label: '', keyword: '', color: '#297b8d' }));
@@ -301,14 +405,19 @@ $('admin-form').addEventListener('submit', async event => {
     brand: $('admin-brand').value, footer: $('admin-footer').value, categories,
     presets: $('admin-presets').value.split('\n').map(s => s.trim()).filter(Boolean),
     colors: Object.fromEntries(['background', 'header', 'footer'].map(key => [key, $('admin-color-' + key).value])),
-    vehicles: $('admin-vehicles').value.split('\n').map(s => s.trim().toUpperCase()).filter(Boolean)
+    vehicles: $('admin-vehicles').value.split('\n').map(s => s.trim().toUpperCase()).filter(Boolean),
+    externalResources: $('admin-external').value.split('\n').map(s => s.trim()).filter(Boolean),
+    captionTemplate: $('admin-caption-template').value,
+    background: { gradientEnabled: $('admin-gradient-enabled').checked, gradientStart: $('admin-gradient-start').value,
+      gradientEnd: $('admin-gradient-end').value, gradientAngle: Number($('admin-gradient-angle').value),
+      imageData: adminBackgroundData, imageOpacity: Number($('admin-background-opacity').value) }
   };
   $('save-config').disabled = true;
   try {
     const response = await fetch('/api/config', { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + $('admin-token').value }, body: JSON.stringify({ config: nextConfig, revision }) });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Speichern fehlgeschlagen.');
-    config = data.config; revision = data.revision; populateConfig(); closeAdmin(); notify('Team-Einstellungen gespeichert.');
+    config = data.config; revision = data.revision; await loadConfiguredBackground(); populateConfig(); closeAdmin(); notify('Team-Einstellungen gespeichert.');
   } catch (error) { errorAt('admin-error', error.message); }
   finally { $('save-config').disabled = !adminEnabled; }
 });
@@ -320,7 +429,7 @@ async function initialize() {
     if (!response.ok) throw new Error();
     const data = await response.json();
     config = data.config; revision = data.revision; adminEnabled = data.adminEnabled;
-    populateConfig(); await refreshDraft();
+    await loadConfiguredBackground(); populateConfig(); await refreshDraft();
   } catch {
     errorAt('boot-error', 'Einstellungen konnten nicht geladen werden. Bitte die Seite neu laden oder den Server prüfen.');
     $('open-admin').disabled = true;

@@ -1,4 +1,5 @@
 import { layout } from './layout.js';
+import { drawBackground } from './background.js';
 const fontFamily = 'Arial, Helvetica, sans-serif';
 export function wrapText(ctx, text, width) {
   const lines = []; let line = '';
@@ -53,13 +54,19 @@ function readableColor(hex) {
   const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255).map(v => v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4);
   return r * .2126 + g * .7152 + b * .0722 > .179 ? '#12222b' : '#ffffff';
 }
-export function renderPost(canvas, state, config, image, scale = 1) {
+export function renderPost(canvas, state, config, image, scale = 1, backgroundImage = null) {
   canvas.width = layout.width * scale; canvas.height = layout.height * scale;
   const ctx = canvas.getContext('2d'); ctx.scale(scale, scale);
   const warnings = [], category = config.categories.find(item => item.code === state.category) || config.categories[0];
   const colors = { background: '#F8F7F3', header: '#142831', footer: '#142831', ...config.colors };
   const textColor = readableColor(colors.background), headerText = readableColor(colors.header), footerText = readableColor(colors.footer);
-  ctx.fillStyle = colors.background; ctx.fillRect(0, 0, layout.width, layout.height);
+  drawBackground(ctx, layout.width, layout.height, colors.background, config.background, backgroundImage);
+  if (config.background?.imageData && !backgroundImage) warnings.push('Hintergrundbild konnte noch nicht geladen werden.');
+  if (backgroundImage || config.background?.gradientEnabled) {
+    // Keep the text area readable over arbitrary photos and gradients.
+    ctx.save(); ctx.globalAlpha = .9; ctx.fillStyle = colors.background;
+    ctx.fillRect(40, 860, 1000, 395); ctx.restore();
+  }
   ctx.fillStyle = colors.header; ctx.fillRect(0, 0, layout.width, 245);
   ctx.fillStyle = category.color; ctx.fillRect(0, 0, layout.width, 12);
   drawText(ctx, config.brand.toUpperCase(), { x: 60, y: 59, width: 690, height: 45, maxSize: 30, minSize: 14, maxLines: 1 }, headerText, warnings);

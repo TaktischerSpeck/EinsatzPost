@@ -96,3 +96,21 @@ test('renders custom backgrounds, selected vehicles, a large year and a yearless
     assert.equal(year.color, '#12222b');
   }
 });
+test('keeps portrait margins white over a loaded team background at both export sizes', async () => {
+  const { renderPost } = await load();
+  const config = structuredClone(defaults);
+  config.background.imageData = 'loaded-background';
+  config.background.gradientEnabled = true;
+  const background = { width: 2000, height: 500 }, photo = { width: 600, height: 1200 };
+  for (const scale of [1, 2]) {
+    const ctx = context(), draws = [], fills = [];
+    ctx.drawImage = (...args) => draws.push(args);
+    ctx.fillRect = (...args) => fills.push({ color: ctx.fillStyle, args });
+    const state = { number: '124', date: '2026-10-05', time: '18:24', category: 'F1', description: 'Kleinbrand', location: 'Ober-Ramstadt', crop: { mode: 'contain', x: .5, y: .5, zoom: 1 } };
+    assert.deepEqual(renderPost({ getContext: () => ctx }, state, config, photo, scale, background), []);
+    assert.equal(draws[0][0], background);
+    assert.deepEqual(draws[1], [photo, 398.5, 272, 283, 566]);
+    assert.ok(fills.some(fill => fill.color === '#ffffff' && JSON.stringify(fill.args) === '[60,272,960,566]'));
+  }
+  assert.ok(renderPost({ getContext: context }, { number: '1', date: '', category: 'F1', crop: {} }, config, null).some(warning => warning.includes('Hintergrundbild')));
+});

@@ -3,6 +3,9 @@
   "footer": "Freiwillige Feuerwehr · Gemeinsam für unsere Stadt",
   "colors": { "background": "#F8F7F3", "header": "#142831", "footer": "#142831" },
   "vehicles": ["HLF20", "ELW"],
+  "externalResources": ["Polizei", "Rettungsdienst"],
+  "captionTemplate": "🚨 Einsatzbericht #{einsatznummer} 🚨\n📍 Ort: {ort}\n📅 Datum: {datum}\n🕒 Zeit: {zeit} Uhr\n🚒 Fahrzeuge: {fahrzeuge}\n👮🏽‍♂️ Weitere Kräfte: {weitere_kraefte}",
+  "background": { "gradientEnabled": false, "gradientStart": "#F8F7F3", "gradientEnd": "#DDE8E2", "gradientAngle": 90, "imageData": "", "imageOpacity": 0.3 },
   "categories": [
     { "code": "F1", "label": "Brand klein", "color": "#C83A35", "keyword": "Brandeinsatz" },
     { "code": "F2", "label": "Brand mittel", "color": "#E17529", "keyword": "Brandeinsatz" },

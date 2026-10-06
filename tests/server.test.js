@@ -97,3 +97,39 @@ test('migrates legacy settings and validates configurable colors and vehicle cod
   invalid.vehicles = [];
   assert.deepEqual(validateConfig(invalid).vehicles, []);
 });
+test('persists posting templates, external resources and background settings; migrates older configuration', async t => {
+  const legacy = structuredClone(defaults);
+  delete legacy.captionTemplate; delete legacy.background; delete legacy.externalResources;
+  const migrated = validateConfig(legacy);
+  assert.equal(migrated.captionTemplate, defaults.captionTemplate);
+  assert.deepEqual(migrated.background, defaults.background);
+  assert.deepEqual(migrated.externalResources, defaults.externalResources);
+  const { request } = await fixture(t);
+  const initial = await (await request('/api/config')).json();
+  const changed = structuredClone(migrated);
+  changed.captionTemplate = '🚒 {fahrzeuge}\n👮 {weitere_kraefte}';
+  changed.externalResources = ['Polizei', 'OR1-10'];
+  changed.background.gradientEnabled = true; changed.background.gradientAngle = 45;
+  changed.background.gradientStart = '#ff0000'; changed.background.gradientEnd = '#000000';
+  const saved = await request('/api/config', writeOptions(changed, initial.revision));
+  assert.equal(saved.status, 200);
+  assert.deepEqual((await saved.json()).config, changed);
+  const invalid = structuredClone(changed); invalid.background.imageData = 'data:image/svg+xml,<svg/>';
+  assert.throws(() => validateConfig(invalid));
+  invalid.background.imageData = ''; invalid.background.imageOpacity = 2;
+  assert.throws(() => validateConfig(invalid));
+});
+
+test('stores the uploaded background image across server restarts', async t => {
+  const first = await fixture(t);
+  const initial = await (await first.request('/api/config')).json();
+  const changed = structuredClone(initial.config);
+  changed.background.imageData = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAEAAQDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDzuiiivePEP//Z';
+  changed.background.imageOpacity = .55;
+  const response = await first.request('/api/config', writeOptions(changed, initial.revision));
+  assert.equal(response.status, 200);
+  const reopened = await fixture(t, token, first.dataDir);
+  const loaded = await (await reopened.request('/api/config')).json();
+  assert.equal(loaded.config.background.imageData, changed.background.imageData);
+  assert.equal(loaded.config.background.imageOpacity, .55);
+});

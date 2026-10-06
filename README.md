@@ -22,7 +22,7 @@ Anwendung: http://localhost:3000. Keine externen Pakete und kein Build-Schritt e
 - Ein lokaler Entwurf inklusive Bild pro Browser.
 - Admin-Verwaltung für Name, Fußzeile, Kategorien, Farben, Stichwörter und Textvorschläge.
 
-Einsatzdaten und Bilder werden beim Erstellen nicht an den Server gesendet. Der Server speichert nur globale Team-Einstellungen. Der normale Editor ist ohne Anmeldung erreichbar. Die aktuelle Gestaltung ist keine 1:1-Kopie der Canva-Vorlage; exakte Hilfslinien und Originalmedien fehlen noch.
+Einsatzdaten und Einsatzfotos werden beim Erstellen nicht an den Server gesendet. Der Server speichert globale Team-Einstellungen einschließlich des optionalen Hintergrundbildes. Der normale Editor ist ohne Anmeldung erreichbar. Die aktuelle Gestaltung ist keine 1:1-Kopie der Canva-Vorlage; exakte Hilfslinien und Originalmedien fehlen noch.
 
 ## Plesk (Linux)
 
@@ -104,3 +104,33 @@ Fahrzeugkürzel werden als erweiterbare Liste hinterlegt (ein Kürzel pro Zeile,
 
 Das Jahr wird aus dem Einsatzdatum übernommen und rechts oben groß gezeigt. Das Datum an der bisherigen Position enthält nur Tag und Monat. Bereits gespeicherte Team-Einstellungen werden automatisch um die neuen Standardwerte ergänzt, vorhandene Farben der Kategorien bleiben erhalten.
 
+## Automatischer Einsatztext
+
+Unter der Grafik erscheint der fertige Einsatztext mit einem Kopierknopf. Die Standardvorlage entspricht dem gewünschten Emoji-Format. Weitere Kräfte / externe Einsatzmittel lassen sich als Freitext eingeben oder aus Vorschlägen ergänzen. Vorschläge sind in den Einstellungen erweiterbar.
+
+Unter Nachricht selbst formatieren können Emojis, Beschriftungen, Reihenfolge und Zeilenumbrüche pro Beitrag bearbeitet werden. Platzhalterknöpfe fügen Werte ein. Die Team-Standardvorlage wird in den Einstellungen gespeichert; individuelle Vorlagen werden mit dem lokalen Entwurf gesichert. Zeilen mit leeren Platzhaltern werden standardmäßig ausgeblendet; diese Option lässt sich deaktivieren. Unbekannte Platzhalter erzeugen einen Hinweis und sperren das Kopieren.
+
+| Platzhalter | Inhalt |
+| --- | --- |
+| {einsatznummer} | Einsatznummer |
+| {ort} | Einsatzort |
+| {datum} | z. B. 03. Oktober 2026 |
+| {datum_kurz} | z. B. 03.10.2026 |
+| {jahr} | Jahr des Einsatzes |
+| {zeit} | Uhrzeit ohne Zusatz Uhr |
+| {fahrzeuge} | Ausgewählte Fahrzeugkürzel, mit Komma getrennt |
+| {weitere_kraefte} | Freitext zu weiteren Kräften |
+| {kategorie} | Kürzel der Kategorie |
+| {stichwort} | Festes Einsatzstichwort |
+| {beschreibung} | Kurzbeschreibung |
+| {feuerwehr} | Feuerwehrname |
+
+Auch {{fahrzeuge}} und <fahrzeuge> sind gültig. Der Text wird ausschließlich aus den eingegebenen Daten erstellt, ohne zusätzliche Ereignisse zu erfinden. Er wird weder automatisch an Instagram gesendet noch veröffentlicht. Kopieren benötigt normalerweise HTTPS und Browserfreigabe; falls es nicht funktioniert, wird der Text zum manuellen Kopieren markiert.
+
+## Hintergrundbild und Farbverlauf
+
+In den Einstellungen können ein Hintergrundbild (JPG, PNG, WebP bis 20 MB), seine Bildstärke und ein zweifarbiger Verlauf mit Richtung hinterlegt werden. Beides kann kombiniert werden. Die Texte erhalten eine Unterlegung für bessere Lesbarkeit. Kopf- und Fußbereich behalten ihre separat eingestellten Hintergrundfarben. Weiße Ränder bei Hochkant-Einsatzfotos bleiben weiß.
+
+Das Hintergrundbild ist eine globale Team-Vorgabe: Es wird beim Speichern auf maximal 1200 Pixel normalisiert und als JPEG in data/config.json bzw. DATA_DIR/config.json abgelegt. Es ist über die öffentliche App-Konfiguration abrufbar. Dafür nur für diesen Zweck geeignete Bilder verwenden. Der Entwurf speichert Einsatztext-Vorlage und weitere Kräfte; er verwendet beim Laden den aktuellen Team-Hintergrund.
+
+Neue Dateien: public/caption.js (Platzhalter und Textgenerierung), public/background.js (Hintergrund-Rendering). Nach Deployment Anwendung neu starten und Seite neu laden. Ältere Konfigurationen und Entwürfe werden um die neuen Standardwerte ergänzt.

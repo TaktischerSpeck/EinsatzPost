@@ -32,7 +32,24 @@ function validateConfig(input) {
     return code;
   });
   if (new Set(vehicles).size !== vehicles.length) throw new Error('Duplicate vehicle');
-  return { brand: input.brand.trim(), footer: input.footer.trim(), colors, vehicles, categories, presets: input.presets.map(item => item.trim()) };
+  const externalResources = input.externalResources === undefined ? defaults.externalResources : input.externalResources;
+  if (!Array.isArray(externalResources) || externalResources.length > 40 || !externalResources.every(value => text(value, 80))) throw new Error('Invalid external resources');
+  const captionTemplate = input.captionTemplate === undefined ? defaults.captionTemplate : input.captionTemplate;
+  if (typeof captionTemplate !== 'string' || !captionTemplate.trim() || captionTemplate.length > 5000 || /[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(captionTemplate)) throw new Error('Invalid caption template');
+  const background = { ...defaults.background, ...(input.background === undefined ? {} : input.background) };
+  if (input.background !== undefined && (!input.background || typeof input.background !== 'object' || Array.isArray(input.background))) throw new Error('Invalid background');
+  if (typeof background.gradientEnabled !== 'boolean' || !/^#[a-f0-9]{6}$/i.test(background.gradientStart) || !/^#[a-f0-9]{6}$/i.test(background.gradientEnd) ||
+      !Number.isFinite(background.gradientAngle) || background.gradientAngle < 0 || background.gradientAngle > 360 ||
+      !Number.isFinite(background.imageOpacity) || background.imageOpacity < 0 || background.imageOpacity > 1 || typeof background.imageData !== 'string') throw new Error('Invalid background');
+  if (background.imageData) {
+    if (background.imageData.length > 1500000 || !/^data:image\/jpeg;base64,[a-z0-9+/]+=*$/i.test(background.imageData)) throw new Error('Invalid background image');
+    const bytes = Buffer.from(background.imageData.split(',')[1], 'base64');
+    if (bytes.length < 4 || bytes[0] !== 255 || bytes[1] !== 216 || bytes[2] !== 255) throw new Error('Invalid JPEG');
+  }
+  return { brand: input.brand.trim(), footer: input.footer.trim(), colors, vehicles, externalResources: externalResources.map(value => value.trim()),
+    captionTemplate, background: { gradientEnabled: background.gradientEnabled, gradientStart: background.gradientStart, gradientEnd: background.gradientEnd,
+      gradientAngle: background.gradientAngle, imageData: background.imageData, imageOpacity: background.imageOpacity },
+    categories, presets: input.presets.map(item => item.trim()) };
 }
 
 function createServer(options = {}) {
@@ -62,7 +79,7 @@ function createServer(options = {}) {
     let size = 0; const chunks = [];
     for await (const chunk of req) {
       size += chunk.length;
-      if (size > 65536) throw Object.assign(new Error('Body too large'), { status: 413 });
+      if (size > 2000000) throw Object.assign(new Error('Body too large'), { status: 413 });
       chunks.push(chunk);
     }
     try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); }

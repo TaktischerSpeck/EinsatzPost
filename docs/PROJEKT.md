@@ -65,3 +65,14 @@ config.colors enthält background, header und footer. Kontrastfarbe für Beschri
 
 Das Jahr steht mit 58 Pixeln Schriftgröße rechts oben. Das Datum bleibt an seiner bisherigen Position mit 30 Pixeln und enthält nur Tag und Monat.
 
+## Nachrichtenvorlagen und weitere Kräfte
+
+config.captionTemplate ist die Team-Standardvorlage (maximal 5000 Zeichen), config.externalResources enthält bis zu 40 erweiterbare Vorschläge. state.externalResources ist ein unabhängiger Freitext mit maximal 500 Zeichen. state.captionTemplate und state.hideEmptyLines werden im lokalen Entwurf gespeichert. Nachrichtenvorlagen sind Plaintext; es gibt weder Codeausführung noch HTML-Rendering. Werte werden einmal ersetzt, sodass Platzhalter in eingegebenem Freitext nicht erneut ausgewertet werden. Die zwölf verfügbaren Platzhalter sind in README.md dokumentiert. Das Datum wird kalendergeprüft und explizit in de-DE / UTC formatiert.
+
+## Grafikhintergrund
+
+config.background enthält gradientEnabled, gradientStart, gradientEnd, gradientAngle, imageData und imageOpacity. imageData ist ein vom Browser normalisiertes JPEG-Data-URL mit maximal 1,5 Millionen Zeichen. Die API akzeptiert ausschließlich JPEG-Data-URLs mit JPEG-Signatur, keine SVG- oder HTML-Inhalte. Der Gesamtrequest ist auf 2 MB begrenzt. Das Bild wird mit den Einstellungen in DATA_DIR gespeichert und ist teamweit verfügbar.
+
+Der Verlauf bildet die Grundfläche; darüber wird das Hintergrundbild mit eingestellter Deckkraft mittig und rahmenfüllend gezeichnet. Ein halbtransparenter Textbereich hält die Beschriftungen lesbar. Kopfbereich, Fußzeile, Einsatzfoto und weiße Seitenränder werden darüber gezeichnet. Beide Exportgrößen verwenden denselben Renderer und dieselbe Vorlage. Ein nicht decodierbares Hintergrundbild sperrt den Export, statt stillschweigend zu fehlen.
+
+Erweiterte automatisierte Prüfungen decken das Beispiel des Nutzers, leere Felder, unbekannte Tokens, Freitext, Kalenderdaten, Hintergrundgeometrie, Verlauf, Deckkraft und Konfigurationsmigration ab. Visuelle Browserprüfung bleibt offen.
