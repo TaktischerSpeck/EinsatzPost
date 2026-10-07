@@ -87,8 +87,8 @@ test('renders custom backgrounds, selected vehicles, a large year and a yearless
     assert.deepEqual(renderPost({ getContext: () => ctx }, state, config, null, scale), []);
     for (const color of Object.values(config.colors)) assert.ok(fills.some(fill => fill.color === color));
     const year = texts.find(text => text.args[0] === '2026');
-    assert.deepEqual(year.args, ['2026', 1020, 102]); assert.match(year.font, /58px/);
-    assert.ok(texts.some(text => JSON.stringify(text.args) === '["05.10",1020,173]'));
+    assert.deepEqual(year.args, ['2026', 1020, 59]); assert.match(year.font, /30px/);
+    assert.ok(texts.some(text => JSON.stringify(text.args) === '["05.10",1020,132]'));
     assert.ok(!texts.some(text => text.args[0] === '05.10.2026'));
     assert.ok(texts.some(text => text.args[0] === 'FAHRZEUGE · HLF20 · ELW'));
     assert.ok(!texts.some(text => text.args[0].includes('UNKNOWN')));
@@ -113,4 +113,23 @@ test('keeps portrait margins white over a loaded team background at both export 
     assert.ok(fills.some(fill => fill.color === '#ffffff' && JSON.stringify(fill.args) === '[60,272,960,566]'));
   }
   assert.ok(renderPost({ getContext: context }, { number: '1', date: '', category: 'F1', crop: {} }, config, null).some(warning => warning.includes('Hintergrundbild')));
+});
+
+test('header pairs use identical fitted font sizes and the accent bar is 1.5 times thicker', async () => {
+  const { renderPost } = await load();
+  for (const brand of ['Feuerwehr Ober-Ramstadt', 'Feuerwehr mit einem sehr langen Namen']) {
+    const ctx = context(), texts = [], fills = [];
+    ctx.fillText = (text, x, y) => texts.push({ text, x, y, font: ctx.font, align: ctx.textAlign });
+    ctx.fillRect = (...args) => fills.push(args);
+    const state = { number: '123456', date: '2026-10-07', category: 'F1', description: 'Kleinbrand', location: 'Ober-Ramstadt', crop: {} };
+    assert.deepEqual(renderPost({ getContext: () => ctx }, state, { ...defaults, brand }, null), []);
+    const year = texts.find(item => item.text === '2026');
+    const name = texts.find(item => item.text === brand.toUpperCase());
+    const date = texts.find(item => item.text === '07.10');
+    const number = texts.find(item => item.text === 'EINSATZ 123456');
+    assert.equal(year.font, name.font); assert.equal(year.y, name.y);
+    assert.equal(date.font, number.font); assert.equal(date.y, number.y);
+    assert.equal(year.align, 'right'); assert.equal(date.align, 'right');
+    assert.ok(fills.some(args => JSON.stringify(args) === '[0,0,1080,18]'));
+  }
 });
