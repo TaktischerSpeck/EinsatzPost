@@ -7,3 +7,50 @@
 .vehicle-fieldset,.palette-fieldset{border:0;padding:0;margin:0 0 20px;min-width:0}.vehicle-fieldset legend,.palette-fieldset legend{font-size:12px;font-weight:600;color:#334d54;padding:0;margin-bottom:10px}.vehicle-options{display:flex;flex-wrap:wrap;gap:8px}.vehicle-option{position:relative;margin:0;cursor:pointer}.vehicle-option input[type=checkbox]{position:absolute;opacity:0;width:1px;height:1px}.vehicle-option span{display:flex;align-items:center;justify-content:center;min-height:44px;padding:9px 13px;background:#f8faf6;border:1px solid #d5dfda;border-radius:6px;font-size:12px;font-weight:650}.vehicle-option input:checked+span{background:#17343b;color:white;border-color:#17343b}.vehicle-option input:focus-visible+span{outline:3px solid #b15e33;outline-offset:3px}.palette-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.palette-grid label{font-size:11px;margin-bottom:0}
 
 .caption-panel{margin-top:18px;padding:22px 24px;background:white;border:1px solid var(--line);border-radius:10px}.caption-panel textarea{font-size:13px;line-height:1.7}.caption-panel>label textarea{background:#f8faf6}.template-editor{margin-top:18px}.template-editor summary{font-size:12px;font-weight:650;cursor:pointer;min-height:44px}.template-editor label{margin-top:12px}.check-label{display:flex;gap:9px;align-items:center;line-height:1.5;min-height:44px}.check-label input[type=checkbox]{accent-color:#17343b;width:18px;height:18px;flex-shrink:0}.background-fieldset{border:1px solid var(--line);border-radius:8px;padding:14px;margin:0 0 20px;min-width:0}.background-fieldset legend{font-size:12px;font-weight:650}.background-thumbnail{display:block;max-width:100%;max-height:160px;margin:10px 0;object-fit:contain;border-radius:6px}.background-fieldset input[type=file]{display:block;width:100%;margin-top:10px;font-size:11px}.background-fieldset .palette-grid select{font-size:11px;padding:10px 5px}.preview-panel:has(.caption-panel){position:static}@media(max-width:680px){.caption-panel{padding:20px}.background-fieldset .palette-grid{grid-template-columns:1fr 1fr}.background-fieldset .palette-grid label:last-child{grid-column:1/-1}}
+
+/* More comfortable controls for the editor and team settings. */
+.panel-heading{gap:12px;flex-wrap:wrap}
+.reset-button{gap:8px;border-radius:10px;padding:10px 14px;background:#f5f8f5;border-color:#d5dfda;white-space:nowrap}
+.reset-button svg{width:20px;height:20px;flex-shrink:0}
+.reset-button:hover{background:#e8efed;border-color:#8aa69b}
+.reset-button:active{background:#dce8e1}
+.keyword-note strong{font-size:14px;line-height:1.45}
+#admin-dialog{width:min(960px,calc(100vw - 32px));max-height:92vh;max-height:92dvh;padding:32px;font-size:16px}
+#admin-dialog h2{font-size:26px}
+#admin-dialog h3{font-size:18px}
+#admin-dialog .eyebrow{font-size:12px}
+#admin-dialog .dialog-intro{font-size:15px;margin-bottom:28px}
+#admin-dialog label{font-size:15px;line-height:1.5;margin-bottom:22px}
+#admin-dialog input:not([type=range]):not([type=color]):not([type=checkbox]):not([type=file]),#admin-dialog select,#admin-dialog textarea{font-size:16px;min-height:52px;padding:13px 14px;border-radius:8px}
+#admin-dialog textarea{min-height:112px;line-height:1.6}
+#admin-dialog .field-help,#admin-dialog .optional{font-size:13px;line-height:1.65}
+#admin-dialog legend{font-size:16px;margin-bottom:14px}
+#admin-dialog .palette-grid{gap:18px}
+#admin-dialog input[type=color]{height:58px}
+#admin-dialog input[type=range]{min-height:38px}
+#admin-dialog input[type=file]{font-size:15px;line-height:1.6}
+#admin-dialog input[type=file]::file-selector-button{padding:12px 16px;margin-right:12px;border:1px solid var(--line);border-radius:8px;background:#f3f6f1;color:var(--ink);font:inherit;cursor:pointer}
+#admin-dialog .button,#admin-dialog .text-button{min-height:52px;font-size:15px;padding:12px 16px}
+#admin-dialog .icon-button{width:52px;height:52px;font-size:30px;flex-shrink:0}
+#admin-dialog .preset{min-height:44px;font-size:14px;padding:9px 12px}
+#admin-dialog .check-label input[type=checkbox]{width:22px;height:22px;min-height:22px;margin:0;padding:0}
+#admin-dialog .category-row{grid-template-columns:120px minmax(0,1fr) 120px;gap:8px 18px;padding:20px;margin-bottom:20px;border-radius:10px}
+#admin-dialog .category-row label{font-size:15px;margin-bottom:8px}
+#admin-dialog .background-fieldset{padding:20px;border-radius:10px;margin-bottom:28px}
+#admin-dialog .notice{font-size:14px;padding:14px 18px}
+#admin-dialog .dialog-actions{gap:16px;margin-top:28px}
+@media(max-width:680px){
+  #admin-dialog{width:calc(100vw - 20px);padding:22px 18px;max-height:94vh;max-height:94dvh}
+  #admin-dialog h2{font-size:23px}
+  #admin-dialog .category-row{grid-template-columns:minmax(0,1fr) 100px;gap:12px;padding:16px}
+  #admin-dialog .category-row label:nth-child(1){grid-row:1;grid-column:1}
+  #admin-dialog .category-row label:nth-child(2){grid-row:2;grid-column:1/-1}
+  #admin-dialog .category-row label:nth-child(3){grid-row:3;grid-column:1/-1}
+  #admin-dialog .category-row label:nth-child(4){grid-row:1;grid-column:2}
+  #admin-dialog .category-row button{grid-row:4;grid-column:1/-1;justify-self:end}
+  #admin-dialog .background-fieldset{padding:16px}
+  #admin-dialog .palette-grid{gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}
+  #admin-dialog .palette-grid label:last-child{grid-column:1/-1}
+  #admin-dialog .dialog-actions{flex-wrap:wrap}
+  #admin-dialog .dialog-actions .button{flex:1 1 180px}
+}
