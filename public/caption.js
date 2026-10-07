@@ -1,6 +1,6 @@
 export const placeholders = [
   ['einsatznummer', 'Einsatznummer'], ['ort', 'Ort'], ['datum', 'Datum ausgeschrieben'],
-  ['datum_kurz', 'Datum kurz'], ['jahr', 'Jahr'], ['zeit', 'Uhrzeit'],
+  ['einsatzdauer', 'Einsatzdauer'], ['datum_kurz', 'Datum kurz'], ['jahr', 'Jahr'], ['zeit', 'Uhrzeit'],
   ['fahrzeuge', 'Fahrzeuge'], ['weitere_kraefte', 'Weitere Kräfte'],
   ['kategorie', 'Kategorie'], ['stichwort', 'Stichwort'], ['beschreibung', 'Kurzbeschreibung'],
   ['feuerwehr', 'Feuerwehrname']
@@ -18,6 +18,7 @@ export function captionValues(state, config) {
     einsatznummer: state.number || '', ort: (state.location || '').trim(),
     datum: date ? new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(date) : '',
     datum_kurz: date ? state.date.split('-').reverse().join('.') : '',
+    einsatzdauer: (state.duration || '').trim(),
     jahr: date ? state.date.slice(0, 4) : '', zeit: state.time || '',
     fahrzeuge: (config.vehicles || []).filter(code => (state.vehicles || []).includes(code)).join(', '),
     weitere_kraefte: (state.externalResources || '').trim().replace(/\s*\n\s*/g, ', '),

@@ -117,6 +117,7 @@ Under Format Your Own Message, you can edit emojis, labels, order, and line brea
 | {datum_kurz} | For example, 03.10.2026 |
 | {jahr} | Incident year |
 | {zeit} | Time, without the word “Uhr” |
+| {einsatzdauer} | Optional incident duration, e.g. “1 Std. 20 Min.” |
 | {fahrzeuge} | Selected vehicle abbreviations, separated by commas |
 | {weitere_kraefte} | Free text describing additional forces |
 | {kategorie} | Category abbreviation |
@@ -154,3 +155,7 @@ workflow permissions. It does not require enabling Actions-created pull requests
 Branch rules must allow this automation; any required reviews remain enforced.
 No personal access token is required. To retry an interrupted promotion, manually
 run **Check EinsatzPost** on `dev` (optionally supplying a PR number).
+
+The optional incident duration accepts text such as `1 Std. 20 Min.` and appears
+between the alarm time and the location. Use `{einsatzdauer}` in a posting template
+to include it in the caption; empty duration lines follow the hide-empty-lines setting.

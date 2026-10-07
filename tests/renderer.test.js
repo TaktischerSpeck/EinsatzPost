@@ -73,7 +73,7 @@ test('contain paints white margins and uses identical geometry in both export re
     assert.equal(canvas.height, 1350 * scale);
   }
 });
-test('renders custom backgrounds, selected vehicles, a large year and a yearless date', async () => {
+test('renders custom backgrounds, selected vehicles, matched header sizes and a yearless date', async () => {
   const { renderPost, dateLabel } = await load();
   assert.equal(dateLabel('2026-10-05'), '05.10');
   const config = structuredClone(defaults);
@@ -90,7 +90,7 @@ test('renders custom backgrounds, selected vehicles, a large year and a yearless
     assert.deepEqual(year.args, ['2026', 1020, 59]); assert.match(year.font, /30px/);
     assert.ok(texts.some(text => JSON.stringify(text.args) === '["05.10",1020,132]'));
     assert.ok(!texts.some(text => text.args[0] === '05.10.2026'));
-    assert.ok(texts.some(text => text.args[0] === 'FAHRZEUGE · HLF20 · ELW'));
+    assert.ok(texts.some(text => text.args[0] === 'Fahrzeuge: HLF20 · ELW'));
     assert.ok(!texts.some(text => text.args[0].includes('UNKNOWN')));
     assert.equal(texts.find(text => text.args[0] === 'Kleinbrand').color, '#ffffff');
     assert.equal(year.color, '#12222b');
@@ -132,4 +132,29 @@ test('header pairs use identical fitted font sizes and the accent bar is 1.5 tim
     assert.equal(year.align, 'right'); assert.equal(date.align, 'right');
     assert.ok(fills.some(args => JSON.stringify(args) === '[0,0,1080,18]'));
   }
+});
+
+test('renders optional duration centrally with alarm left and location centered right in both export sizes', async () => {
+  const { renderPost } = await load();
+  const { layout } = await import('../public/layout.js');
+  for (const scale of [1, 2]) for (const duration of [undefined, '', '  ', '1 Std. 20 Min.']) {
+    const ctx = context(), texts = [];
+    ctx.fillText = (text, x, y) => texts.push({ text, x, y, align: ctx.textAlign, font: ctx.font });
+    const state = { number: '123', date: '2026-10-07', time: '12:00', duration, category: 'F1', description: 'Ausgelöste Brandmeldeanlage', location: 'Groß-Bieberau', vehicles: ['HLF20', 'ELW'], crop: {} };
+    const config = { ...defaults, vehicles: ['HLF20', 'ELW'] };
+    assert.deepEqual(renderPost({ getContext: () => ctx }, state, config, null, scale), []);
+    assert.ok(texts.some(item => item.text === '12:00 Uhr' && item.x === 60 && item.align === 'left'));
+    assert.ok(texts.some(item => item.text === 'Groß-Bieberau' && item.x === 870 && item.align === 'center'));
+    assert.ok(texts.some(item => item.text === 'EINSATZORT' && item.x === 870 && item.align === 'center'));
+    assert.ok(texts.some(item => item.text === 'Fahrzeuge: HLF20 · ELW' && /30px/.test(item.font)));
+    assert.equal(texts.some(item => item.text === 'EINSATZDAUER'), Boolean(duration?.trim()));
+    if (duration?.trim()) assert.ok(texts.some(item => item.text === duration && item.x === 540 && item.align === 'center'));
+  }
+  assert.ok(layout.description.height < 146);
+  assert.ok(layout.keyword.maxSize > 34);
+  assert.ok(layout.vehicles.maxSize > 20);
+  assert.ok(layout.description.y + layout.description.height < layout.keyword.y);
+  assert.ok(layout.keyword.y + layout.keyword.height < layout.vehicles.y);
+  assert.ok(layout.vehicles.y + layout.vehicles.height < 1135);
+  assert.ok(layout.location.y + layout.location.height < 1280);
 });
