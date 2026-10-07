@@ -3,7 +3,7 @@ import { layout } from './layout.js';
 import { generateCaption, placeholders } from './caption.js';
 
 const $ = id => document.getElementById(id);
-const fields = ['number', 'date', 'category', 'description', 'time', 'location', 'externalResources'];
+const fields = ['number', 'date', 'category', 'description', 'time', 'duration', 'location', 'externalResources'];
 let config, revision = 0, image = null, imageBlob = null, imageName = '';
 let crop = { x: .5, y: .5, zoom: 1, mode: 'cover' };
 let vehicles = [];
