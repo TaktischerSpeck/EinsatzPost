@@ -68,7 +68,7 @@ export function renderPost(canvas, state, config, image, scale = 1, backgroundIm
   if (backgroundImage || config.background?.gradientEnabled) {
     // Keep the text area readable over arbitrary photos and gradients.
     ctx.save(); ctx.globalAlpha = .9; ctx.fillStyle = colors.background;
-    ctx.fillRect(40, 860, 1000, 395); ctx.restore();
+    ctx.fillRect(40, 860, 1000, 420); ctx.restore();
   }
   ctx.fillStyle = colors.header; ctx.fillRect(0, 0, layout.width, 245);
   ctx.fillStyle = category.color; ctx.fillRect(0, 0, layout.width, 18);

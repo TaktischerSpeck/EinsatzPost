@@ -109,6 +109,7 @@ test('keeps portrait margins white over a loaded team background at both export 
     const state = { number: '124', date: '2026-10-05', time: '18:24', category: 'F1', description: 'Kleinbrand', location: 'Ober-Ramstadt', crop: { mode: 'contain', x: .5, y: .5, zoom: 1 } };
     assert.deepEqual(renderPost({ getContext: () => ctx }, state, config, photo, scale, background), []);
     assert.equal(draws[0][0], background);
+    assert.ok(fills.some(fill => JSON.stringify(fill.args) === '[40,860,1000,420]'));
     assert.deepEqual(draws[1], [photo, 398.5, 272, 283, 566]);
     assert.ok(fills.some(fill => fill.color === '#ffffff' && JSON.stringify(fill.args) === '[60,272,960,566]'));
   }
