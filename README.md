@@ -1,136 +1,135 @@
 # EinsatzPost
 
-Mobile Web-App für Feuerwehr-Einsatzgrafiken: feste Vorlage, Live-Vorschau, Bildausschnitt und Export.
+Mobile web app for creating fire and rescue service incident graphics with a fixed template, live preview, image cropping, and export.
 
-## Start
+## Getting started
 
-Node.js ab Version 22 installieren und im Projektverzeichnis npm start ausführen.
-Anwendung: http://localhost:3000. Keine externen Pakete und kein Build-Schritt erforderlich.
+Install Node.js 22 or later, then run `npm start` in the project directory.  
+App: http://localhost:3000. No external packages or build step are required.
 
-- npm run dev: Entwicklung mit automatischem Neustart.
-- npm run check: JavaScript-Syntax prüfen.
-- npm test: API- und Renderer-Tests.
+- `npm run dev`: start in development mode with automatic restarts.
+- `npm run check`: check JavaScript syntax.
+- `npm test`: run API and renderer tests.
 
-## Funktionen
+## Features
 
-- Einsatzdaten eingeben und Kategorie auswählen.
-- Festes Stichwort und Tagfarbe aus den Team-Einstellungen.
-- JPG, PNG oder WebP auswählen, alternativ HTTPS-Bildlink mit CORS-Unterstützung.
-- Foto im festen Rahmen verschieben, zoomen oder über Regler ausrichten.
-- Automatische Schriftanpassung; Textüberlauf sperrt den Export.
-- PNG und JPEG in 1080 × 1350 oder 2160 × 2700 Pixeln.
-- Ein lokaler Entwurf inklusive Bild pro Browser.
-- Admin-Verwaltung für Name, Fußzeile, Kategorien, Farben, Stichwörter und Textvorschläge.
+- Enter incident details and select a category.
+- Use the fixed incident keyword and tag color configured in the team settings.
+- Choose a JPG, PNG, or WebP image, or provide an HTTPS image URL with CORS support.
+- Move and zoom the photo within the fixed frame, or adjust it with the controls.
+- Automatic text sizing; text overflow disables export.
+- Export PNG and JPEG images at 1080 × 1350 or 2160 × 2700 pixels.
+- One local draft, including its image, is stored per browser.
+- Admin settings for the name, footer, categories, colors, keywords, and text suggestions.
 
-Einsatzdaten und Einsatzfotos werden beim Erstellen nicht an den Server gesendet. Der Server speichert globale Team-Einstellungen einschließlich des optionalen Hintergrundbildes. Der normale Editor ist ohne Anmeldung erreichbar. Die aktuelle Gestaltung ist keine 1:1-Kopie der Canva-Vorlage; exakte Hilfslinien und Originalmedien fehlen noch.
+Incident details and photos are not sent to the server when a graphic is created. The server stores global team settings, including an optional background image. The standard editor is accessible without signing in. The current design is not an exact copy of the Canva template; its precise guides and original media are not available yet.
 
 ## Plesk (Linux)
 
-1. Node.js-Unterstützung und Git-Erweiterung aktivieren.
-2. Repository in ein Anwendungsverzeichnis deployen, beispielsweise /httpdocs/einsatzpost.
-3. Node.js-Version ab 22 wählen.
-4. Application Root: /httpdocs/einsatzpost.
-5. Document Root: /httpdocs/einsatzpost/public.
-6. Application Startup File: app.js.
-7. Application Mode: production.
-8. In den Umgebungsvariablen ADMIN_TOKEN setzen: mindestens 16 Zeichen, besser ein zufälliger 32-Byte-Schlüssel.
-9. DATA_DIR auf ein beschreibbares Verzeichnis außerhalb des Deployments setzen, beispielsweise /var/www/vhosts/DEINE-DOMAIN/private/einsatzpost-data.
-10. Anwendung neu starten und HTTPS aktivieren.
+1. Enable Node.js support and the Git extension.
+2. Deploy the repository to an application directory, for example `/httpdocs/einsatzpost`.
+3. Select Node.js 22 or later.
+4. Application Root: `/httpdocs/einsatzpost`.
+5. Document Root: `/httpdocs/einsatzpost/public`.
+6. Application Startup File: `app.js`.
+7. Application Mode: `production`.
+8. Set `ADMIN_TOKEN` in the environment variables. Use at least 16 characters; a random 32-byte key is recommended.
+9. Set `DATA_DIR` to a writable directory outside the deployment, for example `/var/www/vhosts/YOUR-DOMAIN/private/einsatzpost-data`.
+10. Restart the application and enable HTTPS.
 
-Die Pfade sind Beispiele und müssen zur Domain passen. DATA_DIR muss für den Node-Benutzer beschreibbar sein. PORT wird von Plesk vorgegeben; dort nicht selbst überschreiben. .env.example ist nur Dokumentation und wird nicht automatisch geladen.
+These paths are examples and must be adjusted for your domain. The Node.js user must be able to write to `DATA_DIR`. Plesk sets `PORT`; do not override it. `.env.example` is documentation only and is not loaded automatically.
 
-Einen Admin-Schlüssel selbst erzeugen:
+Generate an admin key with:
 
     node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
 
-Nur in Plesk setzen und berechtigten Administratoren geben; niemals ins Repository committen. Ohne ADMIN_TOKEN bleibt die Admin-Speicherung deaktiviert.
+Set the key only in Plesk and share it only with authorized administrators; never commit it to the repository. Admin settings storage is disabled when `ADMIN_TOKEN` is not set.
 
-Standardmäßig liegen die Einstellungen in data/config.json. Dieses Verzeichnis ist von Git ausgeschlossen. Für Plesk Git ausdrücklich DATA_DIR außerhalb des Checkouts verwenden und die Datei regelmäßig sichern. Die Speicherung ist für eine einzelne Node-Instanz ausgelegt.
+By default, settings are stored in `data/config.json`. This directory is excluded from Git. When using Plesk Git, set `DATA_DIR` to a location outside the checkout and back up the file regularly. Storage is designed for a single Node.js instance.
 
-## Automatisches Deployment mit Plesk Git
+## Automatic deployment with Plesk Git
 
-1. In Plesk Git dieses Repository und main auswählen.
-2. Automatischen Deploymentmodus aktivieren.
-3. Von Plesk erzeugte Webhook-URL kopieren.
-4. Bei GitHub unter Settings → Webhooks eintragen: Content type application/json, Ereignis Just the push event.
-5. Bei einem privaten Repository den von Plesk erzeugten Deploy-Key mit Leserechten hinterlegen; dieses Repository ist öffentlich.
-6. In Plesk zusätzliche Deployment-Aktionen aktivieren. Zum Neustart von Passenger im Application Root ausführen:
+1. In Plesk Git, select this repository and the `main` branch.
+2. Enable automatic deployment.
+3. Copy the webhook URL generated by Plesk.
+4. Add it on GitHub under Settings → Webhooks. Set the content type to `application/json` and select Just the push event.
+5. For a private repository, add the read-only deploy key generated by Plesk; this repository is public.
+6. Enable additional deployment actions in Plesk. To restart Passenger, run the following in the Application Root:
 
     mkdir -p tmp
     touch tmp/restart.txt
 
-Sicherstellen, dass die Aktionen im tatsächlichen Application Root laufen. Bei Bedarf vor dem Neustart npm run check und npm test mit der von Plesk bereitgestellten Node-Version ausführen. Falls diese Passenger-Neustartmethode auf dem Host nicht unterstützt wird, die Plesk-Neustartfunktion verwenden.
+Make sure the actions run in the actual Application Root. If needed, run `npm run check` and `npm test` with the Node.js version provided by Plesk before restarting. If this Passenger restart method is not supported on the host, use the Plesk restart function.
 
-Der Webhook und Plesk sind noch nicht verbunden. Dazu sind Domain und konkrete Hosting-Konfiguration nötig. GitHub Actions prüft den Code und deployt nicht. Ein direkter Plesk-Webhook wartet nicht auf CI: Für geprüftes Deployment main schützen und erst nach bestandenen Checks mergen oder in Plesk manuell deployen.
+The webhook has not yet been connected to Plesk. That requires the domain and specific hosting configuration. GitHub Actions checks the code but does not deploy it. A direct Plesk webhook does not wait for CI. To deploy only verified changes, protect `main` and merge only after checks pass, or deploy manually in Plesk.
 
-Dokumentation:
+Documentation:
 
 - https://docs.plesk.com/en-US/obsidian/administrator-guide/website-management/nodejs-support.76652/
 - https://docs.plesk.com/en-US/obsidian/customer-guide/git-support/using-remote-git-hosting.75848/
 
-## Projektdateien
+## Project files
 
-- app.js: Einstiegspunkt für Node und Plesk.
-- server.js: API, Autorisierung und Speicherung.
-- config/defaults.json: initiale Team-Einstellungen.
-- public/editor.js: Formular, Bilder, Entwürfe und Export.
-- public/renderer.js: Canvas-Rendering und Textanpassung.
-- public/layout.js: Pixelmaße.
-- docs/PROJEKT.md: Anforderungen und Umsetzungsgrenzen.
-- tests/: API- und Renderer-Tests.
+- `app.js`: entry point for Node.js and Plesk.
+- `server.js`: API, authorization, and storage.
+- `config/defaults.json`: initial team settings.
+- `public/editor.js`: form, images, drafts, and export.
+- `public/renderer.js`: canvas rendering and text sizing.
+- `public/layout.js`: pixel dimensions.
+- `docs/PROJEKT.md`: requirements and implementation limits.
+- `tests/`: API and renderer tests.
 
-## Abnahme nach dem Deployment
+## Post-deployment checks
 
-1. /api/health aufrufen.
-2. Einsatz mit langem Text und echtem Foto anlegen.
-3. Bildregler und Verschieben testen; Texte und Rahmen bleiben fest.
-4. PNG und JPEG in beiden Größen herunterladen, Maße und vollständige Texte prüfen.
-5. Entwurf speichern, Seite neu laden und Entwurf laden.
-6. Eine Farbe als Admin ändern, Anwendung neu starten und Speicherung prüfen.
-7. Auf einem Smartphone testen.
+1. Open `/api/health`.
+2. Create an incident graphic using a real photo and a long text.
+3. Test the image controls and dragging; text and frames should stay fixed.
+4. Download PNG and JPEG at both sizes, then verify the dimensions and full text.
+5. Save a draft, reload the page, and load the draft.
+6. Change a color as an admin, restart the application, and verify that the setting persists.
+7. Test on a smartphone.
 
-Die visuelle Browserprüfung war während der Entwicklung gesperrt und ist noch offen.
+Visual browser testing was blocked during development and is still outstanding.
 
-## Hochkantbilder
+## Portrait images
 
-Hochkantbilder werden beim Hinzufügen automatisch vollständig und mittig dargestellt, mit weißen Seitenrändern. Unter Bilddarstellung kann jederzeit zwischen Ganzes Bild mit weißen Rändern und Rahmen füllen · Bild zuschneiden gewechselt werden. Im Modus Ganzes Bild sind Zoom und Verschieben deaktiviert, damit nichts abgeschnitten wird. Die Auswahl gilt für Vorschau, Export und gespeicherte Entwürfe. Ältere Entwürfe behalten ihre bisherige Zuschneidung.
+Portrait images are automatically displayed in full and centered, with white bars on the sides. Under Image Display, you can switch at any time between Show Full Image with White Bars and Fill Frame · Crop Image. Zooming and moving are disabled in Show Full Image mode so that nothing is cropped. This setting applies to the preview, export, and saved drafts. Older drafts keep their previous crop.
 
+## Background colors, vehicles, and year
 
-## Hintergrundfarben, Fahrzeuge und Jahr
+In the team settings, you can set separate background colors for the main area, header, and footer of the incident graphic. The text color adjusts to light or dark backgrounds. The white bars around portrait images remain white.
 
-In den Team-Einstellungen lassen sich Grundfläche, Kopfbereich und Fußzeile der Einsatzgrafik separat einfärben. Die Schriftfarbe passt sich an helle oder dunkle Hintergründe an. Die weißen Ränder bei Hochkantbildern bleiben weiß.
+Vehicle abbreviations are managed in an expandable list, one abbreviation per line (for example, HLF20, ELW, or DLK23/12). Multiple vehicles can be selected in the incident form. Their abbreviations appear below the incident keyword and are saved with the draft. The vehicle line is omitted when no vehicle is selected.
 
-Fahrzeugkürzel werden als erweiterbare Liste hinterlegt (ein Kürzel pro Zeile, z. B. HLF20, ELW oder DLK23/12). Im Einsatzformular können mehrere Fahrzeuge ausgewählt werden; die Kürzel erscheinen unter dem Einsatzstichwort und werden mit dem Entwurf gespeichert. Ohne Auswahl bleibt die Fahrzeugzeile leer.
+The year is taken from the incident date and displayed prominently in the upper-right corner. The date in its original position shows only the day and month. Existing team settings are automatically extended with the new defaults, while existing category colors are preserved.
 
-Das Jahr wird aus dem Einsatzdatum übernommen und rechts oben groß gezeigt. Das Datum an der bisherigen Position enthält nur Tag und Monat. Bereits gespeicherte Team-Einstellungen werden automatisch um die neuen Standardwerte ergänzt, vorhandene Farben der Kategorien bleiben erhalten.
+## Automatically generated incident caption
 
-## Automatischer Einsatztext
+The finished caption appears below the graphic with a copy button. The default template uses the requested emoji format. Additional forces and external resources can be entered as free text or selected from suggestions. Suggestions can be expanded in the settings.
 
-Unter der Grafik erscheint der fertige Einsatztext mit einem Kopierknopf. Die Standardvorlage entspricht dem gewünschten Emoji-Format. Weitere Kräfte / externe Einsatzmittel lassen sich als Freitext eingeben oder aus Vorschlägen ergänzen. Vorschläge sind in den Einstellungen erweiterbar.
+Under Format Your Own Message, you can edit emojis, labels, order, and line breaks for each post. Placeholder buttons insert values. The team’s default template is saved in the settings; custom templates are saved with the local draft. Lines containing empty placeholders are hidden by default; this can be turned off. Unknown placeholders show a warning and disable copying.
 
-Unter Nachricht selbst formatieren können Emojis, Beschriftungen, Reihenfolge und Zeilenumbrüche pro Beitrag bearbeitet werden. Platzhalterknöpfe fügen Werte ein. Die Team-Standardvorlage wird in den Einstellungen gespeichert; individuelle Vorlagen werden mit dem lokalen Entwurf gesichert. Zeilen mit leeren Platzhaltern werden standardmäßig ausgeblendet; diese Option lässt sich deaktivieren. Unbekannte Platzhalter erzeugen einen Hinweis und sperren das Kopieren.
-
-| Platzhalter | Inhalt |
+| Placeholder | Content |
 | --- | --- |
-| {einsatznummer} | Einsatznummer |
-| {ort} | Einsatzort |
-| {datum} | z. B. 03. Oktober 2026 |
-| {datum_kurz} | z. B. 03.10.2026 |
-| {jahr} | Jahr des Einsatzes |
-| {zeit} | Uhrzeit ohne Zusatz Uhr |
-| {fahrzeuge} | Ausgewählte Fahrzeugkürzel, mit Komma getrennt |
-| {weitere_kraefte} | Freitext zu weiteren Kräften |
-| {kategorie} | Kürzel der Kategorie |
-| {stichwort} | Festes Einsatzstichwort |
-| {beschreibung} | Kurzbeschreibung |
-| {feuerwehr} | Feuerwehrname |
+| {einsatznummer} | Incident number |
+| {ort} | Incident location |
+| {datum} | For example, 03 October 2026 |
+| {datum_kurz} | For example, 03.10.2026 |
+| {jahr} | Incident year |
+| {zeit} | Time, without the word “Uhr” |
+| {fahrzeuge} | Selected vehicle abbreviations, separated by commas |
+| {weitere_kraefte} | Free text describing additional forces |
+| {kategorie} | Category abbreviation |
+| {stichwort} | Fixed incident keyword |
+| {beschreibung} | Short description |
+| {feuerwehr} | Fire department name |
 
-Auch {{fahrzeuge}} und <fahrzeuge> sind gültig. Der Text wird ausschließlich aus den eingegebenen Daten erstellt, ohne zusätzliche Ereignisse zu erfinden. Er wird weder automatisch an Instagram gesendet noch veröffentlicht. Kopieren benötigt normalerweise HTTPS und Browserfreigabe; falls es nicht funktioniert, wird der Text zum manuellen Kopieren markiert.
+`{{fahrzeuge}}` and `<fahrzeuge>` are also valid. The caption is generated only from the entered data; it does not invent additional events. It is not sent to Instagram or published automatically. Copying normally requires HTTPS and browser permission. If copying does not work, the text is selected for manual copying.
 
-## Hintergrundbild und Farbverlauf
+## Background image and gradient
 
-In den Einstellungen können ein Hintergrundbild (JPG, PNG, WebP bis 20 MB), seine Bildstärke und ein zweifarbiger Verlauf mit Richtung hinterlegt werden. Beides kann kombiniert werden. Die Texte erhalten eine Unterlegung für bessere Lesbarkeit. Kopf- und Fußbereich behalten ihre separat eingestellten Hintergrundfarben. Weiße Ränder bei Hochkant-Einsatzfotos bleiben weiß.
+In the settings, you can add a background image (JPG, PNG, or WebP, up to 20 MB), adjust its opacity, and configure a two-color gradient and its direction. The image and gradient can be combined. Text is placed on a translucent panel for readability. The header and footer retain their separately configured background colors. White bars around portrait incident photos remain white.
 
-Das Hintergrundbild ist eine globale Team-Vorgabe: Es wird beim Speichern auf maximal 1200 Pixel normalisiert und als JPEG in data/config.json bzw. DATA_DIR/config.json abgelegt. Es ist über die öffentliche App-Konfiguration abrufbar. Dafür nur für diesen Zweck geeignete Bilder verwenden. Der Entwurf speichert Einsatztext-Vorlage und weitere Kräfte; er verwendet beim Laden den aktuellen Team-Hintergrund.
+The background image is a global team setting. When saved, it is resized to a maximum of 1200 pixels and stored as a JPEG in `data/config.json` or `DATA_DIR/config.json`. It is accessible through the public app configuration. Use only images that are suitable for this purpose. Drafts save the caption template and additional forces; when loaded, they use the current team background.
 
-Neue Dateien: public/caption.js (Platzhalter und Textgenerierung), public/background.js (Hintergrund-Rendering). Nach Deployment Anwendung neu starten und Seite neu laden. Ältere Konfigurationen und Entwürfe werden um die neuen Standardwerte ergänzt.
+New files: `public/caption.js` (placeholders and caption generation) and `public/background.js` (background rendering). After deployment, restart the application and reload the page. Older configurations and drafts are automatically extended with the new defaults.
