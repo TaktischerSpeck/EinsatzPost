@@ -4,8 +4,8 @@ Mobile web app for creating fire and rescue service incident graphics with a fix
 
 ## Getting started
 
-Install Node.js 22 or later, then run `npm start` in the project directory.  
-App: http://localhost:3000. No external packages or build step are required.
+Install Node.js 22.9 or later, then run `npm start` in the project directory.  
+App: http://localhost:3000. No external packages or build step are required. To enable admin settings locally, copy `.env.example` to `.env` and set `ADMIN_TOKEN`; `npm start` and `npm run dev` load it automatically. The `.env` file is ignored by Git.
 
 - `npm run dev`: start in development mode with automatic restarts.
 - `npm run check`: check JavaScript syntax.
@@ -28,7 +28,7 @@ Incident details and photos are not sent to the server when a graphic is created
 
 1. Enable Node.js support and the Git extension.
 2. Deploy the repository to an application directory, for example `/httpdocs/einsatzpost`.
-3. Select Node.js 22 or later.
+3. Select Node.js 22.9 or later.
 4. Application Root: `/httpdocs/einsatzpost`.
 5. Document Root: `/httpdocs/einsatzpost/public`.
 6. Application Startup File: `app.js`.
@@ -37,13 +37,13 @@ Incident details and photos are not sent to the server when a graphic is created
 9. Set `DATA_DIR` to a writable directory outside the deployment, for example `/var/www/vhosts/YOUR-DOMAIN/private/einsatzpost-data`.
 10. Restart the application and enable HTTPS.
 
-These paths are examples and must be adjusted for your domain. The Node.js user must be able to write to `DATA_DIR`. Plesk sets `PORT`; do not override it. `.env.example` is documentation only and is not loaded automatically.
+These paths are examples and must be adjusted for your domain. The Node.js user must be able to write to `DATA_DIR`. Plesk sets `PORT`; do not override it. Plesk starts `app.js` directly, so configure environment variables in the Plesk Node.js settings. For local use, the npm scripts load `.env` when present.
 
 Generate an admin key with:
 
     node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
 
-Set the key only in Plesk and share it only with authorized administrators; never commit it to the repository. Admin settings storage is disabled when `ADMIN_TOKEN` is not set.
+In Plesk, set the key in the Node.js environment settings and share it only with authorized administrators. For local use, store it in the ignored `.env` file. Never commit the key to the repository. Admin settings storage is disabled when `ADMIN_TOKEN` is not set.
 
 By default, settings are stored in `data/config.json`. This directory is excluded from Git. When using Plesk Git, set `DATA_DIR` to a location outside the checkout and back up the file regularly. Storage is designed for a single Node.js instance.
 
