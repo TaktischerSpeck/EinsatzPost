@@ -33,8 +33,11 @@ function drawText(ctx, text, box, color, warnings, weight = 700) {
   if (fit.overflow) warnings.push('Text ist zu lang: „' + String(text).slice(0, 45) + '…“');
   ctx.save(); ctx.beginPath(); ctx.rect(box.x, box.y, box.width, box.height); ctx.clip();
   ctx.fillStyle = color; ctx.textBaseline = 'top';
-  fit.lines.forEach((line, i) => ctx.fillText(line, box.x, box.y + i * fit.size * 1.15));
+  ctx.textAlign = box.align || 'left';
+  const x = box.align === 'right' ? box.x + box.width : box.align === 'center' ? box.x + box.width / 2 : box.x;
+  fit.lines.forEach((line, i) => ctx.fillText(line, x, box.y + i * fit.size * 1.15));
   ctx.restore();
+  return fit;
 }
 export function cropGeometry(image, crop) {
   const box = layout.photo, iw = image.naturalWidth || image.width, ih = image.naturalHeight || image.height;
@@ -68,14 +71,12 @@ export function renderPost(canvas, state, config, image, scale = 1, backgroundIm
     ctx.fillRect(40, 860, 1000, 395); ctx.restore();
   }
   ctx.fillStyle = colors.header; ctx.fillRect(0, 0, layout.width, 245);
-  ctx.fillStyle = category.color; ctx.fillRect(0, 0, layout.width, 12);
-  drawText(ctx, config.brand.toUpperCase(), { x: 60, y: 59, width: 690, height: 45, maxSize: 30, minSize: 14, maxLines: 1 }, headerText, warnings);
-  const year = /^\d{4}-\d{2}-\d{2}$/.test(state.date) ? state.date.slice(0, 4) : '—';
-  ctx.fillStyle = headerText; ctx.font = '700 58px ' + fontFamily;
-  ctx.textAlign = 'right'; ctx.fillText(year, 1020, 102); ctx.textAlign = 'left';
-  drawText(ctx, 'EINSATZ ' + (state.number || '—'), { x: 60, y: 132, width: 570, height: 65, maxSize: 52, minSize: 24, maxLines: 1 }, headerText, warnings);
-  ctx.fillStyle = headerText; ctx.font = '400 30px ' + fontFamily;
-  ctx.textAlign = 'right'; ctx.fillText(dateLabel(state.date), 1020, 173); ctx.textAlign = 'left';
+  ctx.fillStyle = category.color; ctx.fillRect(0, 0, layout.width, 18);
+  const brand = drawText(ctx, config.brand.toUpperCase(), { x: 60, y: 59, width: 690, height: 45, maxSize: 30, minSize: 14, maxLines: 1 }, headerText, warnings);
+  const validDate = /^\d{4}-\d{2}-\d{2}$/.test(state.date);
+  drawText(ctx, validDate ? state.date.slice(0, 4) : '—', { x: 800, y: 59, width: 220, height: 45, maxSize: brand.size, minSize: brand.size, maxLines: 1, align: 'right' }, headerText, warnings);
+  const number = drawText(ctx, 'EINSATZ ' + (state.number || '—'), { x: 60, y: 132, width: 570, height: 65, maxSize: 52, minSize: 24, maxLines: 1 }, headerText, warnings);
+  drawText(ctx, validDate ? dateLabel(state.date) : '—', { x: 690, y: 132, width: 330, height: 65, maxSize: number.size, minSize: number.size, maxLines: 1, align: 'right' }, headerText, warnings);
   const photo = layout.photo;
   ctx.save(); ctx.beginPath(); ctx.rect(photo.x, photo.y, photo.width, photo.height); ctx.clip();
   if (image) {
