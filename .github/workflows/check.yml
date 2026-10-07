@@ -53,6 +53,8 @@ jobs:
   test:
     needs: prepare
     if: needs.prepare.outputs.ref != ''
+    outputs:
+      tree: ${{ steps.integration.outputs.tree }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -72,6 +74,9 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git merge --no-edit "$MAIN_SHA"
+      - name: Record the tested integration tree
+        id: integration
+        run: echo "tree=$(git rev-parse 'HEAD^{tree}')" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-node@v6
         with:
           node-version: '${{ matrix.node }}'
@@ -93,7 +98,7 @@ jobs:
     steps:
       - uses: actions/github-script@v8
         env:
-          TESTED_REF: ${{ needs.prepare.outputs.ref }}
+          TESTED_TREE: ${{ needs.test.outputs.tree }}
           TESTED_HEAD: ${{ needs.prepare.outputs.head }}
           TESTED_BASE: ${{ needs.prepare.outputs.base }}
           PR_NUMBER: ${{ needs.prepare.outputs.pr }}
@@ -137,11 +142,25 @@ jobs:
               }
               const comparison = await github.rest.repos.compareCommitsWithBasehead({ ...repo, basehead: main.data.commit.sha + '...' + dev.data.commit.sha });
               if (!comparison.data.files?.length) { core.info('No changes to promote'); return; }
-              const open = await github.rest.pulls.list({ ...repo, state: 'open', base: 'main', head: repo.owner + ':dev' });
-              const pr = open.data[0] || (await github.rest.pulls.create({
-                ...repo, base: 'main', head: 'dev', title: 'Promote tested dev changes to main',
-                body: 'Automatic squash promotion after syntax checks and all tests pass on Node.js 22 and 24, including integration with main.'
-              })).data;
-              // Retest the release PR itself, including any concurrent main changes.
-              await dispatch(pr.number);
+              // Create the tested integration tree on a temporary branch without changing main.
+              // This avoids requiring permission for Actions to create pull requests.
+              const temporary = 'ci/integration-' + context.runId;
+              await github.rest.git.createRef({ ...repo, ref: 'refs/heads/' + temporary, sha: main.data.commit.sha });
+              try {
+                const integration = await github.rest.repos.merge({ ...repo, base: temporary, head: dev.data.commit.sha });
+                const commit = integration.data.sha
+                  ? (await github.rest.git.getCommit({ ...repo, commit_sha: integration.data.sha })).data
+                  : (await github.rest.git.getCommit({ ...repo, commit_sha: main.data.commit.sha })).data;
+                if (commit.tree.sha !== process.env.TESTED_TREE) throw new Error('Integration tree differs from the tested tree; refusing promotion');
+                const squash = await github.rest.git.createCommit({
+                  ...repo, message: 'Promote tested dev changes to main\n\nValidated on Node.js 22 and 24. Source: ' + dev.data.commit.sha,
+                  tree: commit.tree.sha, parents: [main.data.commit.sha]
+                });
+                // Fast-forward only: concurrent main changes cause rejection instead of overwriting.
+                await github.rest.git.updateRef({ ...repo, ref: 'heads/main', sha: squash.data.sha, force: false });
+                await github.rest.repos.merge({ ...repo, base: 'dev', head: squash.data.sha, commit_message: 'Sync main into dev after squash promotion' });
+                core.info('Promoted tested dev tree as squash commit ' + squash.data.sha);
+              } finally {
+                await github.rest.git.deleteRef({ ...repo, ref: 'heads/' + temporary });
+              }
             }

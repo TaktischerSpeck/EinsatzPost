@@ -71,3 +71,38 @@ test('dev promotion uses squash and syncs main back without deleting dev', async
   assert.equal(h.calls[1][1].base, 'dev');
   assert.equal(h.calls[1][1].head, 'squash');
 });
+function promotionHarness(tree = 'tested-tree') {
+  const h = harness();
+  h.github.rest.repos.getBranch = async ({ branch }) => ({ data: { commit: { sha: branch === 'dev' ? 'head' : 'current-base' } } });
+  h.github.rest.repos.compareCommitsWithBasehead = async () => ({ data: { files: [{ filename: 'public/renderer.js' }] } });
+  h.github.rest.repos.merge = async args => {
+    h.calls.push(['integration', args]); return { data: { sha: 'integration-commit' } };
+  };
+  h.github.rest.git.createRef = async args => { h.calls.push(['temporary', args]); };
+  h.github.rest.git.getCommit = async () => ({ data: { tree: { sha: tree } } });
+  h.github.rest.git.createCommit = async args => { h.calls.push(['squash', args]); return { data: { sha: 'release' } }; };
+  h.github.rest.git.updateRef = async args => { h.calls.push(['advance', args]); };
+  return h;
+}
+const promotionEnv = { ...env, PR_NUMBER: '', PROMOTE: 'true', TESTED_TREE: 'tested-tree' };
+test('direct promotion preserves the tested tree and creates exactly one squash parent on main', async () => {
+  const h = promotionHarness(); await h.run(1, { ...context, runId: 42 }, promotionEnv);
+  assert.deepEqual(h.calls.map(call => call[0]), ['temporary', 'integration', 'squash', 'advance', 'integration', 'delete']);
+  assert.deepEqual(h.calls[2][1].parents, ['current-base']);
+  assert.equal(h.calls[2][1].tree, 'tested-tree');
+  assert.equal(h.calls[3][1].ref, 'heads/main');
+  assert.equal(h.calls[3][1].force, false);
+  assert.equal(h.calls[4][1].base, 'dev');
+  assert.equal(h.calls[5][1].ref, 'heads/ci/integration-42');
+});
+test('a different integration tree blocks promotion and cleans up the temporary branch', async () => {
+  const h = promotionHarness('untested-tree');
+  await assert.rejects(h.run(1, { ...context, runId: 42 }, promotionEnv), /differs from the tested tree/);
+  assert.deepEqual(h.calls.map(call => call[0]), ['temporary', 'integration', 'delete']);
+});
+test('concurrent main updates cannot be overwritten and still clean up the integration branch', async () => {
+  const h = promotionHarness();
+  h.github.rest.git.updateRef = async args => { assert.equal(args.force, false); throw new Error('Not a fast forward'); };
+  await assert.rejects(h.run(1, { ...context, runId: 42 }, promotionEnv), /Not a fast forward/);
+  assert.equal(h.calls.at(-1)[0], 'delete');
+});
