@@ -99,7 +99,7 @@ function createServer(options = {}) {
       if (pathname === '/api/config') {
         if (req.method === 'GET') return json(res, 200, { config, revision, adminEnabled: adminToken.length >= 16 });
         if (req.method !== 'PUT') { res.setHeader('Allow', 'GET, PUT'); return json(res, 405, { error: 'Methode nicht erlaubt.' }); }
-        if (adminToken.length < 16) return json(res, 503, { error: 'ADMIN_TOKEN mit mindestens 16 Zeichen einrichten.' });
+        if (adminToken.length < 16) return json(res, 503, { error: 'ADMIN_TOKEN als Umgebungsvariable mit mindestens 16 Zeichen setzen.' });
         const ip = req.socket.remoteAddress, now = Date.now();
         if (attempts.size > 1000) for (const [key, value] of attempts) if (value.until < now) attempts.delete(key);
         let attempt = attempts.get(ip);
