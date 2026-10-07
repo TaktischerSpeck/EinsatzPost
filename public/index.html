@@ -8,11 +8,11 @@
 <body>
 <header class="app-header"><a href="/" class="wordmark"><span class="logo-mark" aria-hidden="true">E<span>↗</span></span><span>Einsatz<span class="brand-light">Post</span></span></a><div class="header-right"><span class="team-label">Für dein Feuerwehr-Team</span><button id="open-admin" class="button quiet" type="button">Einstellungen <span aria-hidden="true">⚙</span></button></div></header>
 <main>
-<section class="intro"><div><p class="eyebrow">WENIGER GESTALTEN. MEHR BERICHTEN.</p><h1>Ein Einsatz. Ein fertiger Post.</h1><p class="lead">Bild und Einsatzdaten rein. Alles sitzt an der richtigen Stelle.</p></div><span class="format-chip"><span class="dot"></span> Instagram · 4:5</span></section>
+<section class="intro"><div><p class="eyebrow">WENIGER GESTALTEN. MEHR BERICHTEN.</p><h1>Ein Einsatz. Ein fertiger Post.</h1><p class="lead">Bild und Einsatzdaten rein. Alles sitzt an der richtigen Stelle.</p></div></section>
 <div id="boot-error" class="notice error" hidden></div>
 <div class="workspace">
 <section class="editor-panel" aria-labelledby="editor-heading">
-<div class="panel-heading"><h2 id="editor-heading">Dein Einsatz</h2><button type="button" class="text-button" id="reset">Neu beginnen ↗</button></div>
+<div class="panel-heading"><h2 id="editor-heading">Dein Einsatz</h2><button type="button" class="button secondary reset-button" id="reset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11a9 9 0 1 1 2.6 6.4"/><path d="M3 3v8h8"/></svg><span>Neu beginnen</span></button></div>
 <form id="post-form">
 <section class="form-section"><h3><span class="step">01</span>Einsatzdaten</h3>
 <div class="two-columns"><label>Einsatznummer<input id="number" name="number" inputmode="numeric" pattern="[0-9]{1,6}" maxlength="6" placeholder="z. B. 124" required></label><label>Datum<input id="date" name="date" type="date" required></label></div>
@@ -26,9 +26,9 @@
 </section>
 <section class="form-section"><h3><span class="step">02</span>Einsatzbild</h3>
 <label class="upload-zone" id="upload-zone" for="image-upload"><span class="upload-icon" aria-hidden="true">↥</span><strong id="image-label">Bild auswählen</strong><span>Antippen oder Bild hierher ziehen</span><small>JPG, PNG oder WebP · max. 20 MB</small><input id="image-upload" type="file" accept="image/jpeg,image/png,image/webp"></label>
-<details class="url-option"><summary>Bild über einen Link hinzufügen</summary><label>HTTPS-Bildadresse<input type="url" id="image-url" placeholder="https://…/bild.jpg"></label><button type="button" id="load-url" class="button secondary">Bild laden</button><p class="field-help">Der Bildanbieter muss CORS erlauben. Alternativ die Bilddatei auswählen.</p></details>
+<details class="url-option"><summary>Bild über einen Link hinzufügen</summary><label>HTTPS-Bildadresse<input type="url" id="image-url" placeholder="https://…/bild.jpg"></label><button type="button" id="load-url" class="button secondary">Bild laden</button></details>
 <div id="crop-controls" hidden><div class="crop-title"><strong>Bildausschnitt</strong><button type="button" id="remove-image" class="text-button">Bild entfernen</button></div><label>Bilddarstellung<select id="image-fit"><option value="cover">Rahmen füllen · Bild zuschneiden</option><option value="contain">Ganzes Bild mit weißen Rändern</option></select></label><p class="field-help" id="crop-help">Nur das Bild lässt sich in der Vorschau verschieben. Der Rahmen bleibt fest.</p><div id="crop-adjustments"><label>Zoom<input id="zoom" type="range" min="1" max="3" step="0.01" value="1"></label><div class="two-columns"><label>Horizontal<input id="crop-x" type="range" min="0" max="1" step="0.01" value="0.5"></label><label>Vertikal<input id="crop-y" type="range" min="0" max="1" step="0.01" value="0.5"></label></div><button type="button" id="center-image" class="text-button">Ausschnitt zurücksetzen</button></div></div>
-<p class="privacy-note"><span aria-hidden="true">◈</span> Dein Bild bleibt auf diesem Gerät.</p>
+
 </section>
 <div class="draft-actions"><button type="button" id="save-draft" class="button secondary">Entwurf speichern</button><button type="button" id="load-draft" class="text-button">Entwurf laden</button><button type="button" id="delete-draft" class="text-button" hidden>Löschen</button></div><p class="field-help">Ein Entwurf pro Browser, inklusive Bild. Keine Synchronisierung zwischen Geräten.</p>
 </form>
