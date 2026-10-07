@@ -1,0 +1,73 @@
+'use strict';
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+const workflow = fs.readFileSync(path.join(__dirname, '../.github/workflows/check.yml'), 'utf8');
+const scripts = [...workflow.matchAll(/script: \|\n((?: {12}[^\n]*\n|\n)+)/g)].map(match => match[1].split('\n').map(line => line.slice(12)).join('\n'));
+const repoName = 'TaktischerSpeck/EinsatzPost';
+const context = { repo: { owner: 'TaktischerSpeck', repo: 'EinsatzPost' }, payload: { repository: { full_name: repoName } } };
+const pull = { number: 7, state: 'open', draft: false, head: { sha: 'head', ref: 'feature/test', repo: { full_name: repoName } }, base: { sha: 'stale', ref: 'dev' }, merge_commit_sha: 'stale-merge' };
+const env = { PR_NUMBER: '7', TESTED_HEAD: 'head', TESTED_BASE: 'current-base', TESTED_REF: 'head' };
+function harness(pr = structuredClone(pull), base = 'current-base') {
+  const calls = [], outputs = {};
+  const github = { rest: {
+    pulls: {
+      get: async () => ({ data: pr }),
+      merge: async args => { calls.push(['merge', args]); return { data: { merged: true, sha: 'squash' } }; }
+    },
+    repos: {
+      getBranch: async () => ({ data: { commit: { sha: base } } }),
+      merge: async args => { calls.push(['sync', args]); return { data: {} }; }
+    },
+    git: {
+      getRef: async () => ({ data: { object: { sha: pr.head.sha } } }),
+      deleteRef: async args => { calls.push(['delete', args]); }
+    },
+    actions: { createWorkflowDispatch: async args => { calls.push(['dispatch', args]); } }
+  } };
+  const core = { info() {}, setOutput(name, value) { outputs[name] = value; } };
+  const run = (index, ctx = context, variables = env) => new AsyncFunction('github', 'context', 'core', 'process', scripts[index])(github, ctx, core, { env: variables });
+  return { run, calls, outputs, github };
+}
+test('pipeline tests the current branch base rather than stale PR metadata', async () => {
+  assert.equal(scripts.length, 2);
+  const h = harness();
+  await h.run(0, { ...context, payload: { ...context.payload, pull_request: { number: 7 } } });
+  assert.equal(h.outputs.ref, 'head');
+  assert.equal(h.outputs.base, 'current-base');
+  assert.match(workflow, /git merge --no-edit "\$MAIN_SHA"/);
+});
+test('queued tests of a closed PR exit without starting another run', async () => {
+  const h = harness({ ...pull, state: 'closed' });
+  await h.run(0, { ...context, payload: { ...context.payload, inputs: { pull_request: '7' } } });
+  assert.deepEqual(h.outputs, {}); assert.deepEqual(h.calls, []);
+});
+test('successful feature integration squash merges, deletes the branch and dispatches dev tests', async () => {
+  const h = harness(); await h.run(1);
+  assert.deepEqual(h.calls.map(call => call[0]), ['merge', 'delete', 'dispatch']);
+  assert.equal(h.calls[0][1].merge_method, 'squash');
+  assert.equal(h.calls[0][1].sha, 'head');
+  assert.equal(h.calls[1][1].ref, 'heads/feature/test');
+  assert.equal(h.calls[2][1].ref, 'dev');
+});
+test('a changed base or head triggers new tests without merging or deleting anything', async () => {
+  for (const [pr, base] of [[pull, 'new-base'], [{ ...pull, head: { ...pull.head, sha: 'new-head' } }, 'current-base']]) {
+    const h = harness(pr, base); await h.run(1);
+    assert.deepEqual(h.calls.map(call => call[0]), ['dispatch']);
+    assert.equal(h.calls[0][1].inputs.pull_request, '7');
+  }
+});
+test('drafts, forks and unrelated branches are never automatically merged', async () => {
+  for (const pr of [{ ...pull, draft: true }, { ...pull, head: { ...pull.head, repo: { full_name: 'other/repo' } } }, { ...pull, head: { ...pull.head, ref: 'other-branch' } }]) {
+    const h = harness(pr); await h.run(1); assert.deepEqual(h.calls, []);
+  }
+});
+test('dev promotion uses squash and syncs main back without deleting dev', async () => {
+  const h = harness({ ...pull, head: { ...pull.head, ref: 'dev' }, base: { ref: 'main' } });
+  await h.run(1);
+  assert.deepEqual(h.calls.map(call => call[0]), ['merge', 'sync']);
+  assert.equal(h.calls[1][1].base, 'dev');
+  assert.equal(h.calls[1][1].head, 'squash');
+});

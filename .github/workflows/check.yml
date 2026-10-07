@@ -33,17 +33,13 @@ jobs:
             const number = context.payload.pull_request?.number || Number(context.payload.inputs?.pull_request || 0);
             if (number) {
               const { data: pr } = await github.rest.pulls.get({ ...repo, pull_number: number });
-              if (pr.state !== 'open') throw new Error('Pull request is no longer open');
-              // GitHub may need a moment to calculate the synthetic merge commit.
-              let current = pr;
-              for (let attempt = 0; !current.merge_commit_sha && attempt < 6; attempt++) {
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                current = (await github.rest.pulls.get({ ...repo, pull_number: number })).data;
-              }
-              if (!current.merge_commit_sha || current.mergeable === false) throw new Error('Resolve merge conflicts first');
-              core.setOutput('ref', current.merge_commit_sha);
-              core.setOutput('head', current.head.sha);
-              core.setOutput('base', current.base.sha);
+              if (pr.state !== 'open') { core.info('Pull request is no longer open; nothing to test'); return; }
+              const base = await github.rest.repos.getBranch({ ...repo, branch: pr.base.ref });
+              // PR base.sha and synthetic merge refs can remain stale after bot merges.
+              // Build and test the integration from the current branch tips instead.
+              core.setOutput('ref', pr.head.sha);
+              core.setOutput('head', pr.head.sha);
+              core.setOutput('base', base.data.commit.sha);
               core.setOutput('pr', number);
             } else {
               core.setOutput('ref', context.sha);
@@ -56,6 +52,7 @@ jobs:
             }
   test:
     needs: prepare
+    if: needs.prepare.outputs.ref != ''
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -67,8 +64,8 @@ jobs:
           ref: ${{ needs.prepare.outputs.ref }}
           fetch-depth: 0
           persist-credentials: false
-      - name: Test the dev and main integration before promotion
-        if: needs.prepare.outputs.promote == 'true'
+      - name: Test integration with the current target branch
+        if: needs.prepare.outputs.base != ''
         env:
           MAIN_SHA: ${{ needs.prepare.outputs.base }}
         run: |
@@ -117,7 +114,7 @@ jobs:
                 core.info('This pull request is not eligible for automatic merging'); return;
               }
               const base = await github.rest.repos.getBranch({ ...repo, branch: pr.base.ref });
-              if (pr.head.sha !== process.env.TESTED_HEAD || base.data.commit.sha !== process.env.TESTED_BASE || pr.merge_commit_sha !== process.env.TESTED_REF) {
+              if (pr.head.sha !== process.env.TESTED_HEAD || base.data.commit.sha !== process.env.TESTED_BASE) {
                 core.info('Branch changed during testing; dispatching a fresh integration test');
                 await dispatch(number); return;
               }
