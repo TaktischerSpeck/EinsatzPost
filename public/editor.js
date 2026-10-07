@@ -335,10 +335,7 @@ $('delete-draft').addEventListener('click', async () => {
   try { await draftOperation('readwrite', store => store.delete('current')); await refreshDraft(); notify('Entwurf gelöscht.'); }
   catch { notify('Entwurf konnte nicht gelöscht werden.'); }
 });
-$('resolution').addEventListener('change', () => {
-  const scale = Number($('resolution').value);
-  $('dimensions').textContent = layout.width * scale + ' × ' + layout.height * scale + ' px';
-});
+
 async function runExport(action) {
   busy = true; render();
   try { await action(await exportBlob()); }
