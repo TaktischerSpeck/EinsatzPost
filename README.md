@@ -133,3 +133,24 @@ In the settings, you can add a background image (JPG, PNG, or WebP, up to 20 MB)
 The background image is a global team setting. When saved, it is resized to a maximum of 1200 pixels and stored as a JPEG in `data/config.json` or `DATA_DIR/config.json`. It is accessible through the public app configuration. Use only images that are suitable for this purpose. Drafts save the caption template and additional forces; when loaded, they use the current team background.
 
 New files: `public/caption.js` (placeholders and caption generation) and `public/background.js` (background rendering). After deployment, restart the application and reload the page. Older configurations and drafts are automatically extended with the new defaults.
+
+## Development and automatic squash promotion
+
+Work on `feature/*` branches created from `dev` and open a pull request to `dev`.
+The **Check EinsatzPost** workflow runs syntax checks and the complete test suite
+on Node.js 22 and 24 against the proposed merge result. Only successful, current
+same-repository feature PRs are squash merged; the feature branch is then deleted.
+Draft PRs and forks are not automatically merged.
+
+After a feature merge (or a direct push to `dev`), the workflow tests `dev` together
+with `main`, creates a `dev` → `main` PR, tests that PR, and squash merges it.
+`dev` is preserved and synchronized with `main` using a regular merge back into
+`dev`, avoiding repeated changes and conflicts caused by squash history.
+A changed head or base triggers fresh tests; failed tests never advance branches.
+
+In **Settings → Actions → General → Workflow permissions**, enable
+**Allow GitHub Actions to create and approve pull requests**. The workflow grants
+its merge job only the required contents, pull-request and workflow permissions.
+Branch rules must allow this automation; any required reviews remain enforced.
+No personal access token is required. To retry an interrupted promotion, manually
+run **Check EinsatzPost** on `dev` (optionally supplying a PR number).
