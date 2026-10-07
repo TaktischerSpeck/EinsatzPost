@@ -4,7 +4,7 @@ Mobile Web-App für eine feste Feuerwehr-Einsatzgrafik. Die Anwendung verhindert
 
 ## Verhalten
 
-- Einsatznummer, Datum, Kategorie, Kurzbeschreibung, Alarmierungszeit, Ort und Bild.
+- Einsatznummer, Datum, Kategorie, Kurzbeschreibung, Alarmierungszeit, optionale Einsatzdauer, Ort und Bild.
 - Kategorien liefern festes Stichwort und Tagfarbe. Nur Administratoren können diese Vorgaben ändern.
 - Die Kurzbeschreibung steht über dem festen Stichwort, entsprechend der ursprünglichen Projektidee.
 - Nur der Bildausschnitt ist verschiebbar und zoombar. Alle Texte und Rahmen bleiben fest.
@@ -76,3 +76,15 @@ config.background enthält gradientEnabled, gradientStart, gradientEnd, gradient
 Der Verlauf bildet die Grundfläche; darüber wird das Hintergrundbild mit eingestellter Deckkraft mittig und rahmenfüllend gezeichnet. Ein halbtransparenter Textbereich hält die Beschriftungen lesbar. Kopfbereich, Fußzeile, Einsatzfoto und weiße Seitenränder werden darüber gezeichnet. Beide Exportgrößen verwenden denselben Renderer und dieselbe Vorlage. Ein nicht decodierbares Hintergrundbild sperrt den Export, statt stillschweigend zu fehlen.
 
 Erweiterte automatisierte Prüfungen decken das Beispiel des Nutzers, leere Felder, unbekannte Tokens, Freitext, Kalenderdaten, Hintergrundgeometrie, Verlauf, Deckkraft und Konfigurationsmigration ab. Visuelle Browserprüfung bleibt offen.
+
+
+## Überarbeitetes Layout und Einsatzdauer
+
+- Jahr und Feuerwehrname verwenden dieselbe angepasste Schriftgröße; Datum und Einsatznummer ebenfalls.
+- Der obere Farbbalken ist 18 px hoch (vorher 12 px).
+- Die Kurzbeschreibung erhält 116 px Höhe. Stichwort und Fahrzeuge nutzen größere Schrift.
+- Fahrzeuge erscheinen als `Fahrzeuge: HLF20 · ELW`.
+- Alarmierung steht links, die optionale Einsatzdauer mittig und der Einsatzort rechts zentriert.
+- Die Dauer ist Freitext mit maximal 32 Zeichen und wird im lokalen Entwurf gespeichert.
+- Der Platzhalter `{einsatzdauer}` ist in Nachrichten verfügbar; ohne Angabe bleibt der Grafikbereich leer.
+- Live-Markierung und Zusatzzeile unter der Vorschau entfallen.

@@ -36,3 +36,11 @@ test('supports all documented fields and multiline free text without HTML execut
   const result = generateCaption('{datum_kurz} | {jahr} | {feuerwehr} | {weitere_kraefte}', { ...state, externalResources: 'Polizei\nOR1-10 <script>' }, config);
   assert.equal(result.text, '03.10.2026 | 2026 | Feuerwehr Ober-Ramstadt | Polizei, OR1-10 <script>');
 });
+
+test('duration is an optional placeholder and omitted for older drafts', async () => {
+  const { generateCaption } = await load();
+  const template = '#{einsatznummer}\n⏱️ Dauer: {einsatzdauer}';
+  assert.equal(generateCaption(template, { ...state, duration: ' 1 Std. 20 Min. ' }, config).text, '#145\n⏱️ Dauer: 1 Std. 20 Min.');
+  assert.equal(generateCaption(template, state, config).text, '#145');
+  assert.equal(generateCaption('<einsatzdauer> / {{einsatzdauer}}', { ...state, duration: '45 Min.' }, config).text, '45 Min. / 45 Min.');
+});
