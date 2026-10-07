@@ -143,14 +143,14 @@ same-repository feature PRs are squash merged; the feature branch is then delete
 Draft PRs and forks are not automatically merged.
 
 After a feature merge (or a direct push to `dev`), the workflow tests `dev` together
-with `main`, creates a `dev` → `main` PR, tests that PR, and squash merges it.
+with `main` and promotes the exact tested tree as one squash commit on `main`.
+A temporary integration branch is removed after promotion.
 `dev` is preserved and synchronized with `main` using a regular merge back into
 `dev`, avoiding repeated changes and conflicts caused by squash history.
 A changed head or base triggers fresh tests; failed tests never advance branches.
 
-In **Settings → Actions → General → Workflow permissions**, enable
-**Allow GitHub Actions to create and approve pull requests**. The workflow grants
-its merge job only the required contents, pull-request and workflow permissions.
+The workflow grants its merge job only the required contents, pull-request and
+workflow permissions. It does not require enabling Actions-created pull requests.
 Branch rules must allow this automation; any required reviews remain enforced.
 No personal access token is required. To retry an interrupted promotion, manually
 run **Check EinsatzPost** on `dev` (optionally supplying a PR number).

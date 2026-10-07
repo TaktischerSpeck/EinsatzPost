@@ -33,17 +33,13 @@ jobs:
             const number = context.payload.pull_request?.number || Number(context.payload.inputs?.pull_request || 0);
             if (number) {
               const { data: pr } = await github.rest.pulls.get({ ...repo, pull_number: number });
-              if (pr.state !== 'open') throw new Error('Pull request is no longer open');
-              // GitHub may need a moment to calculate the synthetic merge commit.
-              let current = pr;
-              for (let attempt = 0; !current.merge_commit_sha && attempt < 6; attempt++) {
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                current = (await github.rest.pulls.get({ ...repo, pull_number: number })).data;
-              }
-              if (!current.merge_commit_sha || current.mergeable === false) throw new Error('Resolve merge conflicts first');
-              core.setOutput('ref', current.merge_commit_sha);
-              core.setOutput('head', current.head.sha);
-              core.setOutput('base', current.base.sha);
+              if (pr.state !== 'open') { core.info('Pull request is no longer open; nothing to test'); return; }
+              const base = await github.rest.repos.getBranch({ ...repo, branch: pr.base.ref });
+              // PR base.sha and synthetic merge refs can remain stale after bot merges.
+              // Build and test the integration from the current branch tips instead.
+              core.setOutput('ref', pr.head.sha);
+              core.setOutput('head', pr.head.sha);
+              core.setOutput('base', base.data.commit.sha);
               core.setOutput('pr', number);
             } else {
               core.setOutput('ref', context.sha);
@@ -56,6 +52,9 @@ jobs:
             }
   test:
     needs: prepare
+    if: needs.prepare.outputs.ref != ''
+    outputs:
+      tree: ${{ steps.integration.outputs.tree }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -67,14 +66,17 @@ jobs:
           ref: ${{ needs.prepare.outputs.ref }}
           fetch-depth: 0
           persist-credentials: false
-      - name: Test the dev and main integration before promotion
-        if: needs.prepare.outputs.promote == 'true'
+      - name: Test integration with the current target branch
+        if: needs.prepare.outputs.base != ''
         env:
           MAIN_SHA: ${{ needs.prepare.outputs.base }}
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git merge --no-edit "$MAIN_SHA"
+      - name: Record the tested integration tree
+        id: integration
+        run: echo "tree=$(git rev-parse 'HEAD^{tree}')" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-node@v6
         with:
           node-version: '${{ matrix.node }}'
@@ -96,7 +98,7 @@ jobs:
     steps:
       - uses: actions/github-script@v8
         env:
-          TESTED_REF: ${{ needs.prepare.outputs.ref }}
+          TESTED_TREE: ${{ needs.test.outputs.tree }}
           TESTED_HEAD: ${{ needs.prepare.outputs.head }}
           TESTED_BASE: ${{ needs.prepare.outputs.base }}
           PR_NUMBER: ${{ needs.prepare.outputs.pr }}
@@ -117,7 +119,7 @@ jobs:
                 core.info('This pull request is not eligible for automatic merging'); return;
               }
               const base = await github.rest.repos.getBranch({ ...repo, branch: pr.base.ref });
-              if (pr.head.sha !== process.env.TESTED_HEAD || base.data.commit.sha !== process.env.TESTED_BASE || pr.merge_commit_sha !== process.env.TESTED_REF) {
+              if (pr.head.sha !== process.env.TESTED_HEAD || base.data.commit.sha !== process.env.TESTED_BASE) {
                 core.info('Branch changed during testing; dispatching a fresh integration test');
                 await dispatch(number); return;
               }
@@ -140,11 +142,25 @@ jobs:
               }
               const comparison = await github.rest.repos.compareCommitsWithBasehead({ ...repo, basehead: main.data.commit.sha + '...' + dev.data.commit.sha });
               if (!comparison.data.files?.length) { core.info('No changes to promote'); return; }
-              const open = await github.rest.pulls.list({ ...repo, state: 'open', base: 'main', head: repo.owner + ':dev' });
-              const pr = open.data[0] || (await github.rest.pulls.create({
-                ...repo, base: 'main', head: 'dev', title: 'Promote tested dev changes to main',
-                body: 'Automatic squash promotion after syntax checks and all tests pass on Node.js 22 and 24, including integration with main.'
-              })).data;
-              // Retest the release PR itself, including any concurrent main changes.
-              await dispatch(pr.number);
+              // Create the tested integration tree on a temporary branch without changing main.
+              // This avoids requiring permission for Actions to create pull requests.
+              const temporary = 'ci/integration-' + context.runId;
+              await github.rest.git.createRef({ ...repo, ref: 'refs/heads/' + temporary, sha: main.data.commit.sha });
+              try {
+                const integration = await github.rest.repos.merge({ ...repo, base: temporary, head: dev.data.commit.sha });
+                const commit = integration.data.sha
+                  ? (await github.rest.git.getCommit({ ...repo, commit_sha: integration.data.sha })).data
+                  : (await github.rest.git.getCommit({ ...repo, commit_sha: main.data.commit.sha })).data;
+                if (commit.tree.sha !== process.env.TESTED_TREE) throw new Error('Integration tree differs from the tested tree; refusing promotion');
+                const squash = await github.rest.git.createCommit({
+                  ...repo, message: 'Promote tested dev changes to main\n\nValidated on Node.js 22 and 24. Source: ' + dev.data.commit.sha,
+                  tree: commit.tree.sha, parents: [main.data.commit.sha]
+                });
+                // Fast-forward only: concurrent main changes cause rejection instead of overwriting.
+                await github.rest.git.updateRef({ ...repo, ref: 'heads/main', sha: squash.data.sha, force: false });
+                await github.rest.repos.merge({ ...repo, base: 'dev', head: squash.data.sha, commit_message: 'Sync main into dev after squash promotion' });
+                core.info('Promoted tested dev tree as squash commit ' + squash.data.sha);
+              } finally {
+                await github.rest.git.deleteRef({ ...repo, ref: 'heads/' + temporary });
+              }
             }
