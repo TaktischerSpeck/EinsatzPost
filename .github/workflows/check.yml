@@ -1,22 +1,150 @@
 name: Check EinsatzPost
 on:
   push:
-    branches: [main]
+    branches: [dev, main]
   pull_request:
+    branches: [dev, main]
+  workflow_dispatch:
+    inputs:
+      pull_request:
+        description: Optional pull request number to retest
+        required: false
+        type: string
 permissions:
   contents: read
+concurrency:
+  group: ci-${{ github.event.pull_request.number || inputs.pull_request || github.ref }}
+  cancel-in-progress: false
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      ref: ${{ steps.revision.outputs.ref }}
+      head: ${{ steps.revision.outputs.head }}
+      base: ${{ steps.revision.outputs.base }}
+      pr: ${{ steps.revision.outputs.pr }}
+      promote: ${{ steps.revision.outputs.promote }}
+    steps:
+      - uses: actions/github-script@v8
+        id: revision
+        with:
+          script: |
+            const repo = context.repo;
+            const number = context.payload.pull_request?.number || Number(context.payload.inputs?.pull_request || 0);
+            if (number) {
+              const { data: pr } = await github.rest.pulls.get({ ...repo, pull_number: number });
+              if (pr.state !== 'open') throw new Error('Pull request is no longer open');
+              // GitHub may need a moment to calculate the synthetic merge commit.
+              let current = pr;
+              for (let attempt = 0; !current.merge_commit_sha && attempt < 6; attempt++) {
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                current = (await github.rest.pulls.get({ ...repo, pull_number: number })).data;
+              }
+              if (!current.merge_commit_sha || current.mergeable === false) throw new Error('Resolve merge conflicts first');
+              core.setOutput('ref', current.merge_commit_sha);
+              core.setOutput('head', current.head.sha);
+              core.setOutput('base', current.base.sha);
+              core.setOutput('pr', number);
+            } else {
+              core.setOutput('ref', context.sha);
+              core.setOutput('head', context.sha);
+              if (context.ref === 'refs/heads/dev') {
+                const main = await github.rest.repos.getBranch({ ...repo, branch: 'main' });
+                core.setOutput('base', main.data.commit.sha);
+                core.setOutput('promote', 'true');
+              }
+            }
   test:
+    needs: prepare
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         node: [22, 24]
     steps:
       - uses: actions/checkout@v6
         with:
+          ref: ${{ needs.prepare.outputs.ref }}
+          fetch-depth: 0
           persist-credentials: false
+      - name: Test the dev and main integration before promotion
+        if: needs.prepare.outputs.promote == 'true'
+        env:
+          MAIN_SHA: ${{ needs.prepare.outputs.base }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git merge --no-edit "$MAIN_SHA"
       - uses: actions/setup-node@v6
         with:
           node-version: '${{ matrix.node }}'
       - run: npm run check
       - run: npm test
+  automate:
+    needs: [prepare, test]
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    concurrency:
+      group: repository-squash-merges
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    steps:
+      - uses: actions/github-script@v8
+        env:
+          TESTED_REF: ${{ needs.prepare.outputs.ref }}
+          TESTED_HEAD: ${{ needs.prepare.outputs.head }}
+          TESTED_BASE: ${{ needs.prepare.outputs.base }}
+          PR_NUMBER: ${{ needs.prepare.outputs.pr }}
+          PROMOTE: ${{ needs.prepare.outputs.promote }}
+        with:
+          script: |
+            const repo = context.repo;
+            const dispatch = async (number) => github.rest.actions.createWorkflowDispatch({
+              ...repo, workflow_id: 'check.yml', ref: 'dev',
+              inputs: number ? { pull_request: String(number) } : {}
+            });
+            const number = Number(process.env.PR_NUMBER || 0);
+            if (number) {
+              const { data: pr } = await github.rest.pulls.get({ ...repo, pull_number: number });
+              const feature = pr.base.ref === 'dev' && pr.head.ref.startsWith('feature/');
+              const release = pr.base.ref === 'main' && pr.head.ref === 'dev';
+              if (pr.draft || pr.state !== 'open' || pr.head.repo.full_name !== context.payload.repository.full_name || (!feature && !release)) {
+                core.info('This pull request is not eligible for automatic merging'); return;
+              }
+              const base = await github.rest.repos.getBranch({ ...repo, branch: pr.base.ref });
+              if (pr.head.sha !== process.env.TESTED_HEAD || base.data.commit.sha !== process.env.TESTED_BASE || pr.merge_commit_sha !== process.env.TESTED_REF) {
+                core.info('Branch changed during testing; dispatching a fresh integration test');
+                await dispatch(number); return;
+              }
+              const result = await github.rest.pulls.merge({ ...repo, pull_number: number, sha: pr.head.sha, merge_method: 'squash' });
+              if (!result.data.merged) throw new Error(result.data.message);
+              if (feature) {
+                // Never delete a branch that received new work after the tested commit.
+                const head = await github.rest.git.getRef({ ...repo, ref: 'heads/' + pr.head.ref });
+                if (head.data.object.sha === pr.head.sha) await github.rest.git.deleteRef({ ...repo, ref: 'heads/' + pr.head.ref });
+                // GITHUB_TOKEN merges do not trigger push workflows, so dispatch explicitly.
+                await dispatch();
+              } else {
+                await github.rest.repos.merge({ ...repo, base: 'dev', head: result.data.sha, commit_message: 'Sync main into dev after squash promotion' });
+              }
+            } else if (process.env.PROMOTE === 'true') {
+              const dev = await github.rest.repos.getBranch({ ...repo, branch: 'dev' });
+              const main = await github.rest.repos.getBranch({ ...repo, branch: 'main' });
+              if (dev.data.commit.sha !== process.env.TESTED_HEAD || main.data.commit.sha !== process.env.TESTED_BASE) {
+                core.info('Branch changed during testing; dispatching fresh tests'); await dispatch(); return;
+              }
+              const comparison = await github.rest.repos.compareCommitsWithBasehead({ ...repo, basehead: main.data.commit.sha + '...' + dev.data.commit.sha });
+              if (!comparison.data.files?.length) { core.info('No changes to promote'); return; }
+              const open = await github.rest.pulls.list({ ...repo, state: 'open', base: 'main', head: repo.owner + ':dev' });
+              const pr = open.data[0] || (await github.rest.pulls.create({
+                ...repo, base: 'main', head: 'dev', title: 'Promote tested dev changes to main',
+                body: 'Automatic squash promotion after syntax checks and all tests pass on Node.js 22 and 24, including integration with main.'
+              })).data;
+              // Retest the release PR itself, including any concurrent main changes.
+              await dispatch(pr.number);
+            }
