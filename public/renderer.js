@@ -101,7 +101,7 @@ export function renderPost(canvas, state, config, image, scale = 1, backgroundIm
   const selectedVehicles = (config.vehicles || []).filter(code => (state.vehicles || []).includes(code));
   if (selectedVehicles.length) drawText(ctx, 'Fahrzeuge: ' + selectedVehicles.join(' · '), layout.vehicles, textColor, warnings, 600);
   ctx.strokeStyle = textColor; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(60, 1135); ctx.lineTo(1020, 1135); ctx.stroke();
-  const label = { y: 1155, height: 28, maxSize: 22, minSize: 18, maxLines: 1 };
+  const label = { y: 1155, height: 28, maxSize: 24, minSize: 18, maxLines: 1 };
   drawText(ctx, 'ALARMIERUNG', { ...label, x: layout.time.x, width: layout.time.width }, textColor, warnings);
   drawText(ctx, 'EINSATZORT', { ...label, x: layout.location.x, width: layout.location.width, align: 'center' }, textColor, warnings);
   drawText(ctx, state.time ? state.time + ' Uhr' : '—', layout.time, textColor, warnings);
@@ -111,6 +111,6 @@ export function renderPost(canvas, state, config, image, scale = 1, backgroundIm
   }
   drawText(ctx, state.location || 'Einsatzort', layout.location, textColor, warnings, 600);
   ctx.fillStyle = colors.footer; ctx.fillRect(0, 1280, 1080, 70);
-  drawText(ctx, config.footer, { x: 60, y: 1302, width: 960, height: 28, maxSize: 21, minSize: 13, maxLines: 1 }, footerText, warnings, 400);
+  drawText(ctx, config.footer, { x: 60, y: 1302, width: 960, height: 28, maxSize: 21, minSize: 13, maxLines: 1, align: 'center' }, footerText, warnings, 400);
   return warnings;
 }

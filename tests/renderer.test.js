@@ -147,7 +147,7 @@ test('renders optional duration centrally with alarm left and location centered 
     assert.ok(texts.some(item => item.text === '12:00 Uhr' && item.x === 60 && item.align === 'left'));
     assert.ok(texts.some(item => item.text === 'Groß-Bieberau' && item.x === 870 && item.align === 'center'));
     assert.ok(texts.some(item => item.text === 'EINSATZORT' && item.x === 870 && item.align === 'center'));
-    assert.ok(texts.some(item => item.text === 'Fahrzeuge: HLF20 · ELW' && /30px/.test(item.font)));
+    assert.ok(texts.some(item => item.text === 'Fahrzeuge: HLF20 · ELW' && /32px/.test(item.font)));
     assert.equal(texts.some(item => item.text === 'EINSATZDAUER'), Boolean(duration?.trim()));
     if (duration?.trim()) assert.ok(texts.some(item => item.text === duration && item.x === 540 && item.align === 'center'));
   }
@@ -158,4 +158,16 @@ test('renders optional duration centrally with alarm left and location centered 
   assert.ok(layout.keyword.y + layout.keyword.height < layout.vehicles.y);
   assert.ok(layout.vehicles.y + layout.vehicles.height < 1135);
   assert.ok(layout.location.y + layout.location.height < 1280);
+});
+
+test('centers the graphic footer within its safe area at both export resolutions', async () => {
+  const { renderPost } = await load();
+  for (const scale of [1, 2]) {
+    const ctx = context(), texts = [];
+    ctx.fillText = (text, x, y) => texts.push({ text, x, y, align: ctx.textAlign });
+    const state = { number: '123', date: '2026-10-07', category: 'F1', description: 'Kleinbrand', location: 'Ober-Ramstadt', crop: {} };
+    assert.deepEqual(renderPost({ getContext: () => ctx }, state, defaults, null, scale), []);
+    const footer = texts.find(item => item.text === defaults.footer);
+    assert.equal(footer.x, 540); assert.equal(footer.align, 'center');
+  }
 });
