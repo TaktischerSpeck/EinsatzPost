@@ -1,5 +1,5 @@
 import { normalizeCategoryCode } from './categories.js';
-import { layout } from './layout.js';
+import { layout } from './layout.js?v=20261008-text-color';
 import { drawBackground } from './background.js';
 const fontFamily = 'Arial, Helvetica, sans-serif';
 export function wrapText(ctx, text, width) {
@@ -41,6 +41,22 @@ function drawText(ctx, text, box, color, warnings, weight = 700) {
   ctx.restore();
   return fit;
 }
+export function fitVehicleLines(ctx, vehicles, box) {
+  // Wrap between complete vehicle abbreviations; keep separators inside each line.
+  for (let size = box.maxSize; size >= box.minSize; size--) {
+    ctx.font = '600 ' + size + 'px ' + fontFamily;
+    const lines = []; let line = 'Fahrzeuge: ';
+    for (const vehicle of vehicles) {
+      const candidate = line + (line === 'Fahrzeuge: ' ? '' : ' · ') + vehicle;
+      if (ctx.measureText(candidate).width > box.width && line !== 'Fahrzeuge: ') {
+        lines.push(line); line = vehicle;
+      } else line = candidate;
+    }
+    lines.push(line);
+    if (lines.length <= 2 && lines.every(text => ctx.measureText(text).width <= box.width)) return { size, lines, overflow: false };
+  }
+  return { size: box.minSize, lines: [], overflow: true };
+}
 export function cropGeometry(image, crop) {
   const box = layout.photo, iw = image.naturalWidth || image.width, ih = image.naturalHeight || image.height;
   if (crop.mode === 'contain') {
@@ -63,8 +79,8 @@ export function renderPost(canvas, state, config, image, scale = 1, backgroundIm
   canvas.width = layout.width * scale; canvas.height = layout.height * scale;
   const ctx = canvas.getContext('2d'); ctx.scale(scale, scale);
   const warnings = [], category = config.categories.find(item => item.code === normalizeCategoryCode(state.category)) || config.categories[0];
-  const colors = { background: '#F8F7F3', header: '#142831', footer: '#142831', ...config.colors };
-  const textColor = readableColor(colors.background), headerText = readableColor(colors.header), footerText = readableColor(colors.footer);
+  const colors = { background: '#F8F7F3', header: '#142831', footer: '#142831', text: '#12222B', ...config.colors };
+  const textColor = colors.text, headerText = readableColor(colors.header), footerText = readableColor(colors.footer);
   drawBackground(ctx, layout.width, layout.height, colors.background, { ...config.background, gradientAngle: 90 }, backgroundImage);
   if (config.background?.imageData && !backgroundImage) warnings.push('Hintergrundbild konnte noch nicht geladen werden.');
   ctx.fillStyle = colors.header; ctx.fillRect(0, 0, layout.width, 245);
@@ -95,19 +111,16 @@ export function renderPost(canvas, state, config, image, scale = 1, backgroundIm
   const tagWidth = Math.min(photo.width - 48, Math.max(126, Math.ceil(ctx.measureText(category.code).width) + 48));
   ctx.fillStyle = category.color; ctx.fillRect(84, 752, tagWidth, 62);
   drawText(ctx, category.code, { x: 96, y: 765, width: tagWidth - 24, height: 40, maxSize: 32, minSize: 14, maxLines: 1, align: 'center' }, readableColor(category.color), warnings);
-  // Sample the actual background for contrast without covering the continuous gradient.
-  const bodyBox = box => {
-    let color = textColor;
-    if (ctx.getImageData) {
-      const pixel = ctx.getImageData(Math.round((box.x + box.width / 2) * scale), Math.round(box.y * scale), 1, 1).data;
-      color = readableColor('#' + [...pixel].slice(0, 3).map(value => value.toString(16).padStart(2, '0')).join(''));
-    }
-    return { ...box, contrast: Boolean(backgroundImage || config.background?.gradientEnabled), color };
-  };
+  // The chosen team text color takes precedence over automatic background sampling.
+  const bodyBox = box => ({ ...box, contrast: Boolean(backgroundImage || config.background?.gradientEnabled), color: textColor });
   const description = bodyBox(layout.description);
   drawText(ctx, state.description || 'Kurzbeschreibung des Einsatzes', description, config.descriptionUsesCategoryColor ? category.color : description.color, warnings);
   const selectedVehicles = (config.vehicles || []).filter(code => (state.vehicles || []).includes(code));
-  if (selectedVehicles.length) drawText(ctx, 'Fahrzeuge: ' + selectedVehicles.join(' · '), bodyBox(layout.vehicles), bodyBox(layout.vehicles).color, warnings, 600);
+  if (selectedVehicles.length) {
+    const box = bodyBox(layout.vehicles), fit = fitVehicleLines(ctx, selectedVehicles, box);
+    if (fit.overflow) warnings.push('Zu viele Fahrzeuge für zwei Zeilen. Bitte weniger Fahrzeuge auswählen.');
+    fit.lines.forEach((line, index) => drawText(ctx, line, { ...box, y: box.y + index * fit.size * 1.15, height: fit.size * 1.15, maxSize: fit.size, minSize: fit.size, maxLines: 1 }, box.color, warnings, 600));
+  }
   const detailsColor = bodyBox(layout.time).color;
   ctx.strokeStyle = detailsColor; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(60, 1135); ctx.lineTo(1020, 1135); ctx.stroke();
   const label = { contrast: Boolean(backgroundImage || config.background?.gradientEnabled), y: 1155, height: 28, maxSize: 24, minSize: 18, maxLines: 1 };

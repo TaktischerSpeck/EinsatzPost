@@ -79,7 +79,7 @@ test('migrates legacy settings and validates configurable colors and vehicle cod
   assert.deepEqual(initial.config.vehicles, defaults.vehicles);
   assert.equal(initial.config.categories[0].color, '#aabbcc');
   const changed = structuredClone(initial.config);
-  changed.colors = { background: '#123456', header: '#ffffff', footer: '#334455' };
+  changed.colors = { background: '#123456', header: '#ffffff', footer: '#334455', text: '#F7FAFC' };
   changed.vehicles = [' HLF20 ', 'elw', 'DLK23/12'];
   const response = await request('/api/config', writeOptions(changed, initial.revision));
   assert.equal(response.status, 200);
@@ -196,4 +196,11 @@ test('defaults the description color toggle for older settings and rejects inval
   delete legacy.descriptionUsesCategoryColor;
   assert.equal(validateConfig(legacy).descriptionUsesCategoryColor, false);
   assert.throws(() => validateConfig({ ...legacy, descriptionUsesCategoryColor: 'yes' }));
+});
+
+test('migrates the default text color and rejects invalid configured text colors', () => {
+  const legacy = structuredClone(defaults);
+  delete legacy.colors.text;
+  assert.equal(validateConfig(legacy).colors.text, '#12222B');
+  assert.throws(() => validateConfig({ ...legacy, colors: { ...legacy.colors, text: 'white' } }));
 });
