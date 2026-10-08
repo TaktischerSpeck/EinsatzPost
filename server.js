@@ -15,9 +15,9 @@ function validateConfig(input) {
   const seen = new Set();
   const categories = input.categories.map(item => {
     const code = normalizeCategoryCode(item?.code);
-    if (!item || !text(code, 60) || !/^[\p{L}\p{N}][\p{L}\p{N} /–_-]*$/u.test(code) || seen.has(code) || !text(item.label, 60) || !text(item.keyword, 100) || !/^#[a-f0-9]{6}$/i.test(item.color)) throw new Error('Invalid category');
+    if (!item || !text(code, 60) || !/^[\p{L}\p{N}][\p{L}\p{N} /–_-]*$/u.test(code) || seen.has(code) || !text(item.label, 60) || !/^#[a-f0-9]{6}$/i.test(item.color)) throw new Error('Invalid category');
     seen.add(code);
-    return { code, label: item.label.trim(), keyword: item.keyword.trim(), color: item.color };
+    return { code, label: item.label.trim(), color: item.color };
   });
   if (!input.presets.every(item => text(item, 100))) throw new Error('Invalid preset');
   // Supply new fields for configurations saved before colors and vehicles existed.

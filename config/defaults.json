@@ -27,176 +27,147 @@
     {
       "code": "R 2",
       "label": "Rettung erweitert",
-      "color": "#D65C9C",
-      "keyword": "Anforderung Drehleiter"
+      "color": "#D65C9C"
     },
     {
       "code": "R 1",
       "label": "Rettung",
-      "color": "#D65C9C",
-      "keyword": "Anforderung Drehleiter"
+      "color": "#D65C9C"
     },
     {
       "code": "R 0",
       "label": "R 0",
-      "color": "#D65C9C",
-      "keyword": "Anforderung Drehleiter"
+      "color": "#D65C9C"
     },
     {
       "code": "Lohbergtunnel F Klein",
       "label": "Lohbergtunnel F Klein",
-      "color": "#C83A35",
-      "keyword": "Brandeinsatz"
+      "color": "#C83A35"
     },
     {
       "code": "H WASS Y",
       "label": "H WASS Y",
-      "color": "#235CA1",
-      "keyword": "Technische Hilfeleistung"
+      "color": "#235CA1"
     },
     {
       "code": "H KLEMM 2 Y",
       "label": "H KLEMM 2 Y",
-      "color": "#235CA1",
-      "keyword": "Technische Hilfeleistung"
+      "color": "#235CA1"
     },
     {
       "code": "H KLEMM 1 Y",
       "label": "H KLEMM 1 Y",
-      "color": "#235CA1",
-      "keyword": "Technische Hilfeleistung"
+      "color": "#235CA1"
     },
     {
       "code": "H GEFAHR 1",
       "label": "H GEFAHR 1",
-      "color": "#235CA1",
-      "keyword": "Technische Hilfeleistung"
+      "color": "#235CA1"
     },
     {
       "code": "H GAS 2",
       "label": "H GAS 2",
-      "color": "#235CA1",
-      "keyword": "Technische Hilfeleistung"
+      "color": "#235CA1"
     },
     {
       "code": "H GAS 1",
       "label": "H GAS 1",
-      "color": "#235CA1",
-      "keyword": "Technische Hilfeleistung"
+      "color": "#235CA1"
     },
     {
       "code": "H EINST Y",
       "label": "H EINST Y",
-      "color": "#235CA1",
-      "keyword": "Technische Hilfeleistung"
+      "color": "#235CA1"
     },
     {
       "code": "H E-CALL Y",
       "label": "H E-CALL Y",
-      "color": "#235CA1",
-      "keyword": "Technische Hilfeleistung"
+      "color": "#235CA1"
     },
     {
       "code": "H ABST Y",
       "label": "H ABST Y",
-      "color": "#235CA1",
-      "keyword": "Technische Hilfeleistung"
+      "color": "#235CA1"
     },
     {
       "code": "H 2",
       "label": "Hilfeleistung mittel",
-      "color": "#235CA1",
-      "keyword": "Technische Hilfeleistung"
+      "color": "#235CA1"
     },
     {
       "code": "H 1 Y – DLK",
       "label": "H 1 Y – DLK",
-      "color": "#235CA1",
-      "keyword": "Technische Hilfeleistung"
+      "color": "#235CA1"
     },
     {
       "code": "H 1 Y",
       "label": "H 1 Y",
-      "color": "#235CA1",
-      "keyword": "Technische Hilfeleistung"
+      "color": "#235CA1"
     },
     {
       "code": "H 1 – Ölspur",
       "label": "H 1 – Ölspur",
-      "color": "#235CA1",
-      "keyword": "Technische Hilfeleistung"
+      "color": "#235CA1"
     },
     {
       "code": "H 1",
       "label": "Hilfeleistung klein",
-      "color": "#235CA1",
-      "keyword": "Technische Hilfeleistung"
+      "color": "#235CA1"
     },
     {
       "code": "F WALD 2",
       "label": "F WALD 2",
-      "color": "#C83A35",
-      "keyword": "Brandeinsatz"
+      "color": "#C83A35"
     },
     {
       "code": "F WALD 1",
       "label": "F WALD 1",
-      "color": "#C83A35",
-      "keyword": "Brandeinsatz"
+      "color": "#C83A35"
     },
     {
       "code": "F RWM",
       "label": "F RWM",
-      "color": "#C83A35",
-      "keyword": "Brandeinsatz"
+      "color": "#C83A35"
     },
     {
       "code": "F LKW / F ZUG",
       "label": "F LKW / F ZUG",
-      "color": "#C83A35",
-      "keyword": "Brandeinsatz"
+      "color": "#C83A35"
     },
     {
       "code": "F BMA",
       "label": "F BMA",
-      "color": "#C83A35",
-      "keyword": "Brandeinsatz"
+      "color": "#C83A35"
     },
     {
       "code": "F 3 Y",
       "label": "F 3 Y",
-      "color": "#C83A35",
-      "keyword": "Brandeinsatz"
+      "color": "#C83A35"
     },
     {
       "code": "F 3",
       "label": "Brand groß",
-      "color": "#C83A35",
-      "keyword": "Brandeinsatz"
+      "color": "#C83A35"
     },
     {
       "code": "F 2 Y",
       "label": "F 2 Y",
-      "color": "#C83A35",
-      "keyword": "Brandeinsatz"
+      "color": "#C83A35"
     },
     {
       "code": "F 2",
       "label": "Brand mittel",
-      "color": "#C83A35",
-      "keyword": "Brandeinsatz"
+      "color": "#C83A35"
     },
     {
       "code": "F 1",
       "label": "Brand klein",
-      "color": "#C83A35",
-      "keyword": "Brandeinsatz"
+      "color": "#C83A35"
     },
     {
       "code": "Brandsicherheitsdienst",
       "label": "Brandsicherheitsdienst",
-      "color": "#C83A35",
-      "keyword": "Brandsicherheitsdienst"
+      "color": "#C83A35"
     }
   ],
   "presets": [
