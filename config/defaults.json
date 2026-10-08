@@ -1,19 +1,210 @@
 {
   "brand": "Feuerwehr Ober-Ramstadt",
   "footer": "Freiwillige Feuerwehr · Gemeinsam für unsere Stadt",
-  "colors": { "background": "#F8F7F3", "header": "#142831", "footer": "#142831" },
-  "vehicles": ["HLF20", "ELW"],
-  "externalResources": ["Polizei", "Rettungsdienst"],
-  "captionTemplate": "🚨 Einsatzbericht #{einsatznummer} 🚨\n📍 Ort: {ort}\n📅 Datum: {datum}\n🕒 Zeit: {zeit} Uhr\n🚒 Fahrzeuge: {fahrzeuge}\n👮🏽‍♂️ Weitere Kräfte: {weitere_kraefte}",
-  "background": { "gradientEnabled": false, "gradientStart": "#F8F7F3", "gradientEnd": "#DDE8E2", "gradientAngle": 90, "imageData": "", "imageOpacity": 0.3 },
-  "categories": [
-    { "code": "F1", "label": "Brand klein", "color": "#C83A35", "keyword": "Brandeinsatz" },
-    { "code": "F2", "label": "Brand mittel", "color": "#E17529", "keyword": "Brandeinsatz" },
-    { "code": "F3", "label": "Brand groß", "color": "#AD2430", "keyword": "Brandeinsatz" },
-    { "code": "H1", "label": "Hilfeleistung klein", "color": "#297B8D", "keyword": "Technische Hilfeleistung" },
-    { "code": "H2", "label": "Hilfeleistung mittel", "color": "#235CA1", "keyword": "Technische Hilfeleistung" },
-    { "code": "R1", "label": "Rettung", "color": "#797044", "keyword": "Anforderung Drehleiter" },
-    { "code": "R2", "label": "Rettung erweitert", "color": "#66528C", "keyword": "Anforderung Drehleiter" }
+  "colors": {
+    "background": "#F8F7F3",
+    "header": "#142831",
+    "footer": "#142831"
+  },
+  "vehicles": [
+    "HLF20",
+    "ELW"
   ],
-  "presets": ["Anforderung Drehleiter", "Ausgelöste Brandmeldeanlage", "Verkehrsunfall", "Unwettereinsatz", "Kleinbrand"]
+  "externalResources": [
+    "Polizei",
+    "Rettungsdienst"
+  ],
+  "captionTemplate": "🚨 Einsatzbericht #{einsatznummer} 🚨\n📍 Ort: {ort}\n📅 Datum: {datum}\n🕒 Zeit: {zeit} Uhr\n🚒 Fahrzeuge: {fahrzeuge}\n👮🏽‍♂️ Weitere Kräfte: {weitere_kraefte}",
+  "background": {
+    "gradientEnabled": false,
+    "gradientStart": "#F8F7F3",
+    "gradientEnd": "#DDE8E2",
+    "gradientAngle": 90,
+    "imageData": "",
+    "imageOpacity": 0.3
+  },
+  "categories": [
+    {
+      "code": "R 2",
+      "label": "Rettung erweitert",
+      "color": "#D65C9C",
+      "keyword": "Anforderung Drehleiter"
+    },
+    {
+      "code": "R 1",
+      "label": "Rettung",
+      "color": "#D65C9C",
+      "keyword": "Anforderung Drehleiter"
+    },
+    {
+      "code": "R 0",
+      "label": "R 0",
+      "color": "#D65C9C",
+      "keyword": "Anforderung Drehleiter"
+    },
+    {
+      "code": "Lohbergtunnel F Klein",
+      "label": "Lohbergtunnel F Klein",
+      "color": "#C83A35",
+      "keyword": "Brandeinsatz"
+    },
+    {
+      "code": "H WASS Y",
+      "label": "H WASS Y",
+      "color": "#235CA1",
+      "keyword": "Technische Hilfeleistung"
+    },
+    {
+      "code": "H KLEMM 2 Y",
+      "label": "H KLEMM 2 Y",
+      "color": "#235CA1",
+      "keyword": "Technische Hilfeleistung"
+    },
+    {
+      "code": "H KLEMM 1 Y",
+      "label": "H KLEMM 1 Y",
+      "color": "#235CA1",
+      "keyword": "Technische Hilfeleistung"
+    },
+    {
+      "code": "H GEFAHR 1",
+      "label": "H GEFAHR 1",
+      "color": "#235CA1",
+      "keyword": "Technische Hilfeleistung"
+    },
+    {
+      "code": "H GAS 2",
+      "label": "H GAS 2",
+      "color": "#235CA1",
+      "keyword": "Technische Hilfeleistung"
+    },
+    {
+      "code": "H GAS 1",
+      "label": "H GAS 1",
+      "color": "#235CA1",
+      "keyword": "Technische Hilfeleistung"
+    },
+    {
+      "code": "H EINST Y",
+      "label": "H EINST Y",
+      "color": "#235CA1",
+      "keyword": "Technische Hilfeleistung"
+    },
+    {
+      "code": "H E-CALL Y",
+      "label": "H E-CALL Y",
+      "color": "#235CA1",
+      "keyword": "Technische Hilfeleistung"
+    },
+    {
+      "code": "H ABST Y",
+      "label": "H ABST Y",
+      "color": "#235CA1",
+      "keyword": "Technische Hilfeleistung"
+    },
+    {
+      "code": "H 2",
+      "label": "Hilfeleistung mittel",
+      "color": "#235CA1",
+      "keyword": "Technische Hilfeleistung"
+    },
+    {
+      "code": "H 1 Y – DLK",
+      "label": "H 1 Y – DLK",
+      "color": "#235CA1",
+      "keyword": "Technische Hilfeleistung"
+    },
+    {
+      "code": "H 1 Y",
+      "label": "H 1 Y",
+      "color": "#235CA1",
+      "keyword": "Technische Hilfeleistung"
+    },
+    {
+      "code": "H 1 – Ölspur",
+      "label": "H 1 – Ölspur",
+      "color": "#235CA1",
+      "keyword": "Technische Hilfeleistung"
+    },
+    {
+      "code": "H 1",
+      "label": "Hilfeleistung klein",
+      "color": "#235CA1",
+      "keyword": "Technische Hilfeleistung"
+    },
+    {
+      "code": "F WALD 2",
+      "label": "F WALD 2",
+      "color": "#C83A35",
+      "keyword": "Brandeinsatz"
+    },
+    {
+      "code": "F WALD 1",
+      "label": "F WALD 1",
+      "color": "#C83A35",
+      "keyword": "Brandeinsatz"
+    },
+    {
+      "code": "F RWM",
+      "label": "F RWM",
+      "color": "#C83A35",
+      "keyword": "Brandeinsatz"
+    },
+    {
+      "code": "F LKW / F ZUG",
+      "label": "F LKW / F ZUG",
+      "color": "#C83A35",
+      "keyword": "Brandeinsatz"
+    },
+    {
+      "code": "F BMA",
+      "label": "F BMA",
+      "color": "#C83A35",
+      "keyword": "Brandeinsatz"
+    },
+    {
+      "code": "F 3 Y",
+      "label": "F 3 Y",
+      "color": "#C83A35",
+      "keyword": "Brandeinsatz"
+    },
+    {
+      "code": "F 3",
+      "label": "Brand groß",
+      "color": "#C83A35",
+      "keyword": "Brandeinsatz"
+    },
+    {
+      "code": "F 2 Y",
+      "label": "F 2 Y",
+      "color": "#C83A35",
+      "keyword": "Brandeinsatz"
+    },
+    {
+      "code": "F 2",
+      "label": "Brand mittel",
+      "color": "#C83A35",
+      "keyword": "Brandeinsatz"
+    },
+    {
+      "code": "F 1",
+      "label": "Brand klein",
+      "color": "#C83A35",
+      "keyword": "Brandeinsatz"
+    },
+    {
+      "code": "Brandsicherheitsdienst",
+      "label": "Brandsicherheitsdienst",
+      "color": "#C83A35",
+      "keyword": "Brandsicherheitsdienst"
+    }
+  ],
+  "presets": [
+    "Anforderung Drehleiter",
+    "Ausgelöste Brandmeldeanlage",
+    "Verkehrsunfall",
+    "Unwettereinsatz",
+    "Kleinbrand"
+  ],
+  "categoryCatalogVersion": 1
 }

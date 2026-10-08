@@ -159,3 +159,20 @@ run **Check EinsatzPost** on `dev` (optionally supplying a PR number).
 The optional incident duration accepts text such as `1 Std. 20 Min.` and appears
 between the alarm time and the location. Use `{einsatzdauer}` in a posting template
 to include it in the caption; empty duration lines follow the hide-empty-lines setting.
+
+
+## Incident category catalog
+
+The default catalog includes all 29 incident types, preserving spaces, umlauts,
+slashes and dashes (for example `H 1 – Ölspur`, `F LKW / F ZUG` and
+`Lohbergtunnel F Klein`). F types use red `#C83A35`, H types blue `#235CA1` and
+R types pink `#D65C9C`. The tunnel fire and fire safety duty also use red.
+Category names support up to 60 characters; tags expand within the photo frame.
+The editor supports up to 100 categories so custom types can coexist with the catalog.
+
+At the first server start after this update, saved settings are upgraded once:
+missing types are added, compact codes such as `F1` become `F 1`, and the family
+colors are applied. Existing custom labels, keywords and other team settings are
+preserved. The original settings remain in
+`DATA_DIR/config.before-category-catalog-v1.json`. Later admin edits or removals
+are retained across restarts. Older local drafts with compact codes remain readable.

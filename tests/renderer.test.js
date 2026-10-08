@@ -171,3 +171,20 @@ test('centers the graphic footer within its safe area at both export resolutions
     assert.equal(footer.x, 540); assert.equal(footer.align, 'center');
   }
 });
+
+test('renders every incident tag completely within the photo in both export sizes', async () => {
+  const { renderPost } = await load();
+  for (const category of defaults.categories) for (const scale of [1, 2]) {
+    const ctx = context(), fills = [], texts = [];
+    ctx.fillRect = (...args) => fills.push(args);
+    ctx.fillText = (text, x, y) => texts.push({ text, x, y, font: ctx.font });
+    const state = { number: '123', date: '2026-10-08', category: category.code, description: 'Testeinsatz', location: 'Ober-Ramstadt', crop: {} };
+    assert.deepEqual(renderPost({ getContext: () => ctx }, state, defaults, null, scale), []);
+    const tag = fills.find(args => args[0] === 84 && args[1] === 752);
+    const text = texts.find(item => item.text === category.code);
+    assert.ok(tag[0] + tag[2] <= 1020);
+    ctx.font = text.font;
+    assert.ok(ctx.measureText(text.text).width <= tag[2] - 24);
+    assert.equal(text.x, tag[0] + tag[2] / 2);
+  }
+});
