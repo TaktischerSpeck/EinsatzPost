@@ -14,7 +14,7 @@ test('generates the requested posting text with German date and selected resourc
 test('supports braces, double braces and angle brackets without recursive substitution', async () => {
   const { generateCaption } = await load();
   const result = generateCaption('🧯 {einsatznummer} / {{kategorie}} / <stichwort>\n{beschreibung}', { ...state, description: '<ort> {fahrzeuge}' }, config);
-  assert.equal(result.text, '🧯 145 / F1 / Brandeinsatz\n<ort> {fahrzeuge}');
+  assert.equal(result.text, '🧯 145 / F 1 / Brandeinsatz\n<ort> {fahrzeuge}');
 });
 test('optionally hides lines with empty fields and preserves user formatting', async () => {
   const { generateCaption } = await load();
@@ -43,4 +43,15 @@ test('duration is an optional placeholder and omitted for older drafts', async (
   assert.equal(generateCaption(template, { ...state, duration: ' 1 Std. 20 Min. ' }, config).text, '#145\n⏱️ Dauer: 1 Std. 20 Min.');
   assert.equal(generateCaption(template, state, config).text, '#145');
   assert.equal(generateCaption('<einsatzdauer> / {{einsatzdauer}}', { ...state, duration: '45 Min.' }, config).text, '45 Min. / 45 Min.');
+});
+
+test('preserves exact category names and recognizes legacy draft codes', async () => {
+  const { normalizeCategoryCode } = await import('../public/categories.js');
+  const { generateCaption } = await load();
+  assert.equal(normalizeCategoryCode('F1'), 'F 1');
+  assert.equal(normalizeCategoryCode('H 1 – Ölspur'), 'H 1 – Ölspur');
+  for (const code of ['H 1 – Ölspur', 'Lohbergtunnel F Klein', 'F LKW / F ZUG']) {
+    assert.equal(generateCaption('{kategorie}', { ...state, category: code }, config).text, code);
+  }
+  assert.equal(generateCaption('{kategorie}', { ...state, category: 'R2' }, config).text, 'R 2');
 });
