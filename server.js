@@ -5,14 +5,19 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const defaults = require('./config/defaults.json');
 
+function normalizeCategoryCode(value) {
+  return typeof value === 'string' ? value.trim().replace(/^([FHR])([0-9])$/, '$1 $2') : '';
+}
+
 function validateConfig(input) {
   const text = (value, max) => typeof value === 'string' && value.trim().length > 0 && value.trim().length <= max && !/[\u0000-\u001f]/.test(value);
-  if (!input || !text(input.brand, 80) || !text(input.footer, 120) || !Array.isArray(input.categories) || input.categories.length < 1 || input.categories.length > 40 || !Array.isArray(input.presets) || input.presets.length > 30) throw new Error('Invalid configuration');
+  if (!input || !text(input.brand, 80) || !text(input.footer, 120) || !Array.isArray(input.categories) || input.categories.length < 1 || input.categories.length > 100 || !Array.isArray(input.presets) || input.presets.length > 30) throw new Error('Invalid configuration');
   const seen = new Set();
   const categories = input.categories.map(item => {
-    if (!item || !/^[A-Z][A-Z0-9_-]{0,9}$/.test(item.code) || seen.has(item.code) || !text(item.label, 60) || !text(item.keyword, 100) || !/^#[a-f0-9]{6}$/i.test(item.color)) throw new Error('Invalid category');
-    seen.add(item.code);
-    return { code: item.code, label: item.label.trim(), keyword: item.keyword.trim(), color: item.color };
+    const code = normalizeCategoryCode(item?.code);
+    if (!item || !text(code, 60) || !/^[\p{L}\p{N}][\p{L}\p{N} /–_-]*$/u.test(code) || seen.has(code) || !text(item.label, 60) || !text(item.keyword, 100) || !/^#[a-f0-9]{6}$/i.test(item.color)) throw new Error('Invalid category');
+    seen.add(code);
+    return { code, label: item.label.trim(), keyword: item.keyword.trim(), color: item.color };
   });
   if (!input.presets.every(item => text(item, 100))) throw new Error('Invalid preset');
   // Supply new fields for configurations saved before colors and vehicles existed.
@@ -46,7 +51,9 @@ function validateConfig(input) {
     const bytes = Buffer.from(background.imageData.split(',')[1], 'base64');
     if (bytes.length < 4 || bytes[0] !== 255 || bytes[1] !== 216 || bytes[2] !== 255) throw new Error('Invalid JPEG');
   }
-  return { brand: input.brand.trim(), footer: input.footer.trim(), colors, vehicles, externalResources: externalResources.map(value => value.trim()),
+  const categoryCatalogVersion = input.categoryCatalogVersion ?? 0;
+  if (!Number.isInteger(categoryCatalogVersion) || categoryCatalogVersion < 0 || categoryCatalogVersion > 1) throw new Error('Invalid category catalog version');
+  return { categoryCatalogVersion, brand: input.brand.trim(), footer: input.footer.trim(), colors, vehicles, externalResources: externalResources.map(value => value.trim()),
     captionTemplate, background: { gradientEnabled: background.gradientEnabled, gradientStart: background.gradientStart, gradientEnd: background.gradientEnd,
       gradientAngle: background.gradientAngle, imageData: background.imageData, imageOpacity: background.imageOpacity },
     categories, presets: input.presets.map(item => item.trim()) };
@@ -61,10 +68,34 @@ function createServer(options = {}) {
   let config, revision;
   let writeQueue = Promise.resolve();
   const attempts = new Map();
-  const initialized = fs.readFile(configFile, 'utf8').then(raw => { config = validateConfig(JSON.parse(raw)); }).catch(error => {
+  const initialized = fs.readFile(configFile, 'utf8').then(async raw => {
+    config = validateConfig(JSON.parse(raw));
+    if (config.categoryCatalogVersion < defaults.categoryCatalogVersion) {
+      // Upgrade once; subsequent admin removals and edits remain intentional.
+      const current = new Map(config.categories.map(category => [category.code, category]));
+      const catalog = new Map(defaults.categories.map(category => [category.code, category]));
+      config.categories = defaults.categories.map(category => ({ ...category, ...current.get(category.code), color: category.color }));
+      for (const category of current.values()) {
+        if (catalog.has(category.code)) continue;
+        const family = category.code.match(/^([FHR])(?: |$)/)?.[1];
+        const color = defaults.categories.find(item => item.code.startsWith(family + ' '))?.color;
+        config.categories.push({ ...category, ...(color ? { color } : {}) });
+      }
+      config.categoryCatalogVersion = defaults.categoryCatalogVersion;
+      config = validateConfig(config);
+      // Retain the previous settings and atomically persist the upgrade.
+      await fs.writeFile(path.join(dataDir, 'config.before-category-catalog-v1.json'), raw, { flag: 'wx' }).catch(error => {
+        if (error.code !== 'EEXIST') throw error;
+      });
+      const temporary = configFile + '.catalog-tmp';
+      await fs.writeFile(temporary, JSON.stringify(config, null, 2) + '\n');
+      await fs.rename(temporary, configFile);
+    }
+  }).catch(error => {
     if (error.code !== 'ENOENT') throw error;
     config = structuredClone(defaults);
   }).then(() => { revision = configRevision(config); });
+
   initialized.catch(error => console.error('Configuration could not be loaded:', error.message));
   const json = (res, status, body) => {
     res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });

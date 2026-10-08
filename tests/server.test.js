@@ -133,3 +133,59 @@ test('stores the uploaded background image across server restarts', async t => {
   assert.equal(loaded.config.background.imageData, changed.background.imageData);
   assert.equal(loaded.config.background.imageOpacity, .55);
 });
+
+test('ships all 29 requested incident types with exact spacing and uniform family colors', () => {
+  const expected = ['R 2', 'R 1', 'R 0', 'Lohbergtunnel F Klein', 'H WASS Y', 'H KLEMM 2 Y', 'H KLEMM 1 Y', 'H GEFAHR 1', 'H GAS 2', 'H GAS 1', 'H EINST Y', 'H E-CALL Y', 'H ABST Y', 'H 2', 'H 1 Y – DLK', 'H 1 Y', 'H 1 – Ölspur', 'H 1', 'F WALD 2', 'F WALD 1', 'F RWM', 'F LKW / F ZUG', 'F BMA', 'F 3 Y', 'F 3', 'F 2 Y', 'F 2', 'F 1', 'Brandsicherheitsdienst'];
+  assert.deepEqual(defaults.categories.map(item => item.code), expected);
+  const colors = { F: '#C83A35', H: '#235CA1', R: '#D65C9C' };
+  for (const category of defaults.categories) {
+    const family = /^[FHR] /.test(category.code) ? category.code[0] : 'F';
+    assert.equal(category.color, colors[family]);
+  }
+  assert.deepEqual(validateConfig(defaults).categories, defaults.categories);
+});
+test('category validation allows spaced names, slashes and umlauts while rejecting markup and alias duplicates', () => {
+  for (const code of ['H 1 – Ölspur', 'H E-CALL Y', 'F LKW / F ZUG', 'Lohbergtunnel F Klein', 'Brandsicherheitsdienst']) {
+    const config = structuredClone(defaults);
+    config.categories = [{ code, label: code, keyword: 'Test', color: '#C83A35' }];
+    assert.equal(validateConfig(config).categories[0].code, code);
+  }
+  const config = structuredClone(defaults);
+  config.categories = [{ code: 'F1', label: 'Brand', keyword: 'Brand', color: '#C83A35' }, { code: 'F 1', label: 'Brand', keyword: 'Brand', color: '#C83A35' }];
+  assert.throws(() => validateConfig(config), /Invalid category/);
+  config.categories = [{ code: '<script>', label: 'Test', keyword: 'Test', color: '#C83A35' }];
+  assert.throws(() => validateConfig(config), /Invalid category/);
+});
+test('upgrades saved incident categories once, preserves team settings and retains the original configuration', async t => {
+  const legacy = structuredClone(defaults);
+  delete legacy.categoryCatalogVersion;
+  legacy.brand = 'Custom department'; legacy.vehicles = ['DLK23/12']; legacy.captionTemplate = 'Custom {fahrzeuge}';
+  legacy.categories = [
+    { code: 'F1', label: 'Custom fire label', color: '#abcdef', keyword: 'Custom fire keyword' },
+    { code: 'R2', label: 'Custom rescue', color: '#abcdef', keyword: 'Custom rescue keyword' },
+    { code: 'H SOND', label: 'Custom help', color: '#abcdef', keyword: 'Custom help keyword' },
+    { code: 'SONDER', label: 'Custom event', color: '#aabbcc', keyword: 'Custom event' }
+  ];
+  const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'einsatzpost-catalog-'));
+  t.after(() => fs.rm(dataDir, { recursive: true, force: true }));
+  const raw = JSON.stringify(legacy);
+  await fs.writeFile(path.join(dataDir, 'config.json'), raw);
+  const first = await fixture(t, token, dataDir);
+  const loaded = await (await first.request('/api/config')).json();
+  assert.equal(loaded.config.categories.length, 31);
+  assert.equal(loaded.config.brand, legacy.brand);
+  assert.deepEqual(loaded.config.vehicles, legacy.vehicles);
+  assert.equal(loaded.config.captionTemplate, legacy.captionTemplate);
+  assert.equal(loaded.config.categories.find(item => item.code === 'F 1').keyword, 'Custom fire keyword');
+  assert.equal(loaded.config.categories.find(item => item.code === 'F 1').label, 'Custom fire label');
+  assert.equal(loaded.config.categories.find(item => item.code === 'H SOND').color, '#235CA1');
+  assert.equal(loaded.config.categories.find(item => item.code === 'SONDER').color, '#aabbcc');
+  assert.equal(await fs.readFile(path.join(dataDir, 'config.before-category-catalog-v1.json'), 'utf8'), raw);
+  assert.deepEqual(JSON.parse(await fs.readFile(path.join(dataDir, 'config.json'), 'utf8')), loaded.config);
+  const edited = structuredClone(loaded.config);
+  edited.categories = edited.categories.filter(item => item.code !== 'R 0');
+  assert.equal((await first.request('/api/config', writeOptions(edited, loaded.revision))).status, 200);
+  const restarted = await fixture(t, token, dataDir);
+  assert.deepEqual((await (await restarted.request('/api/config')).json()).config, edited);
+  assert.equal(await fs.readFile(path.join(dataDir, 'config.before-category-catalog-v1.json'), 'utf8'), raw);
+});

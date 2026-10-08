@@ -1,3 +1,4 @@
+import { normalizeCategoryCode } from './categories.js';
 import { renderPost, cropGeometry } from './renderer.js';
 import { layout } from './layout.js';
 import { generateCaption, placeholders } from './caption.js';
@@ -46,8 +47,8 @@ function syncCrop() {
   render();
 }
 function populateConfig() {
-  const previous = $('category').value;
-  $('category').replaceChildren(...config.categories.map(item => new Option(item.code + ' · ' + item.label, item.code)));
+  const previous = normalizeCategoryCode($('category').value);
+  $('category').replaceChildren(...config.categories.map(item => new Option(item.code === item.label ? item.code : item.code + ' · ' + item.label, item.code)));
   if (config.categories.some(item => item.code === previous)) $('category').value = previous;
   $('preset-buttons').replaceChildren(...config.presets.map(text => {
     const button = document.createElement('button');
@@ -318,7 +319,7 @@ $('load-draft').addEventListener('click', async () => {
   try {
     const draft = await draftOperation('readonly', store => store.get('current'));
     if (!draft) return notify('Kein Entwurf vorhanden.');
-    fields.forEach(id => { $(id).value = draft.state[id] ?? ''; });
+    fields.forEach(id => { $(id).value = id === 'category' ? normalizeCategoryCode(draft.state[id]) : draft.state[id] ?? ''; });
     if (!config.categories.some(item => item.code === $('category').value)) $('category').value = config.categories[0].code;
     vehicles = Array.isArray(draft.state.vehicles) ? draft.state.vehicles : []; populateVehicles();
     $('caption-template').value = typeof draft.state.captionTemplate === 'string' ? draft.state.captionTemplate : config.captionTemplate;
@@ -356,10 +357,9 @@ $('share').addEventListener('click', () => runExport(async blob => {
 
 function categoryRow(item) {
   const row = document.createElement('div'); row.className = 'category-row';
-  for (const [key, label, max] of [['code', 'Kürzel', 10], ['label', 'Bezeichnung', 60], ['keyword', 'Festes Stichwort', 100]]) {
+  for (const [key, label, max] of [['code', 'Einsatzart', 60], ['label', 'Bezeichnung', 60], ['keyword', 'Festes Stichwort', 100]]) {
     const wrapper = document.createElement('label'), input = document.createElement('input');
     wrapper.textContent = label; input.value = item[key]; input.dataset.field = key; input.maxLength = max; input.required = true;
-    if (key === 'code') { input.pattern = '[A-Z][A-Z0-9_-]{0,9}'; input.addEventListener('input', () => { input.value = input.value.toUpperCase(); }); }
     wrapper.append(input); row.append(wrapper);
   }
   const colorLabel = document.createElement('label'); colorLabel.textContent = 'Tagfarbe';
@@ -399,7 +399,7 @@ $('admin-form').addEventListener('submit', async event => {
   event.preventDefault(); errorAt('admin-error', '');
   const categories = [...$('category-rows').children].map(row => Object.fromEntries([...row.querySelectorAll('[data-field]')].map(input => [input.dataset.field, input.value])));
   const nextConfig = {
-    brand: $('admin-brand').value, footer: $('admin-footer').value, categories,
+    categoryCatalogVersion: config.categoryCatalogVersion, brand: $('admin-brand').value, footer: $('admin-footer').value, categories,
     presets: $('admin-presets').value.split('\n').map(s => s.trim()).filter(Boolean),
     colors: Object.fromEntries(['background', 'header', 'footer'].map(key => [key, $('admin-color-' + key).value])),
     vehicles: $('admin-vehicles').value.split('\n').map(s => s.trim().toUpperCase()).filter(Boolean),

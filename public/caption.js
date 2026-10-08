@@ -1,3 +1,4 @@
+import { normalizeCategoryCode } from './categories.js';
 export const placeholders = [
   ['einsatznummer', 'Einsatznummer'], ['ort', 'Ort'], ['datum', 'Datum ausgeschrieben'],
   ['einsatzdauer', 'Einsatzdauer'], ['datum_kurz', 'Datum kurz'], ['jahr', 'Jahr'], ['zeit', 'Uhrzeit'],
@@ -13,7 +14,7 @@ function parsedDate(value) {
   return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day ? date : null;
 }
 export function captionValues(state, config) {
-  const date = parsedDate(state.date), category = config.categories.find(item => item.code === state.category);
+  const date = parsedDate(state.date), category = config.categories.find(item => item.code === normalizeCategoryCode(state.category));
   return {
     einsatznummer: state.number || '', ort: (state.location || '').trim(),
     datum: date ? new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(date) : '',
