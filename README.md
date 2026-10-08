@@ -129,7 +129,7 @@ Under Format Your Own Message, you can edit emojis, labels, order, and line brea
 
 ## Background image and gradient
 
-In the settings, you can add a background image (JPG, PNG, or WebP, up to 20 MB), adjust its opacity, and configure a two-color gradient and its direction. The image and gradient can be combined. Text is placed on a translucent panel for readability. The header and footer retain their separately configured background colors. White bars around portrait incident photos remain white.
+In the settings, you can add a background image (JPG, PNG, or WebP, up to 20 MB), adjust its opacity, and configure a continuous vertical two-color gradient. The image and gradient can be combined. Text uses adaptive contrast and subtle shadows without covering the gradient. The optional team setting `descriptionUsesCategoryColor` renders the short description in the selected incident color. The header and footer retain their separately configured background colors. The background remains visible beside portrait incident photos. Long vehicle lists wrap onto two lines before reducing their font size.
 
 The background image is a global team setting. When saved, it is resized to a maximum of 1200 pixels and stored as a JPEG in `data/config.json` or `DATA_DIR/config.json`. It is accessible through the public app configuration. Use only images that are suitable for this purpose. Drafts save the caption template and additional forces; when loaded, they use the current team background.
 

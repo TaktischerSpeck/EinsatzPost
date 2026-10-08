@@ -96,7 +96,7 @@ test('renders custom backgrounds, selected vehicles, matched header sizes and a 
     assert.equal(year.color, '#12222b');
   }
 });
-test('preserves portrait background margins and fades the reading area at both export sizes', async () => {
+test('preserves portrait margins and a continuous vertical gradient at both export sizes', async () => {
   const { renderPost } = await load();
   const config = structuredClone(defaults);
   config.background.imageData = 'loaded-background';
@@ -114,9 +114,8 @@ test('preserves portrait background margins and fades the reading area at both e
     assert.deepEqual(renderPost({ getContext: () => ctx }, state, config, photo, scale, background), []);
     assert.equal(draws[0][0], background);
     assert.ok(!fills.some(fill => JSON.stringify(fill.args) === '[40,860,1000,420]'));
-    const scrim = gradients.find(gradient => JSON.stringify(gradient.args) === '[0,838,0,1280]');
-    assert.deepEqual(scrim.stops, [[0, defaults.colors.background + '00'], [.12, defaults.colors.background + 'e6'], [1, defaults.colors.background + 'e6']]);
-    assert.ok(fills.some(fill => fill.color === scrim && JSON.stringify(fill.args) === '[0,838,1080,442]'));
+    assert.ok(!fills.some(fill => JSON.stringify(fill.args) === '[0,838,1080,442]'));
+    assert.equal(gradients.length, 1);
     assert.deepEqual(draws[1], [photo, 398.5, 272, 283, 566]);
     assert.ok(!fills.some(fill => JSON.stringify(fill.args) === '[60,272,960,566]'));
   }
@@ -194,5 +193,25 @@ test('renders every incident tag completely within the photo in both export size
     ctx.font = text.font;
     assert.ok(ctx.measureText(text.text).width <= tag[2] - 24);
     assert.equal(text.x, tag[0] + tag[2] / 2);
+  }
+});
+
+test('wraps long vehicle lists at normal size and applies the optional category description color', async () => {
+  const { renderPost } = await load();
+  const { layout } = await import('../public/layout.js');
+  const vehicles = ['PKW', 'MTW', 'KDOW', 'ELW', 'TLF 20/40 SL', 'DLAK 23/12', 'HLF20', 'LF 16/12', 'GW-L'];
+  for (const scale of [1, 2]) for (const enabled of [false, true]) {
+    const ctx = context(), texts = [];
+    ctx.fillText = (text, x, y) => texts.push({ text, y, font: ctx.font, color: ctx.fillStyle });
+    const config = { ...defaults, vehicles, descriptionUsesCategoryColor: enabled };
+    const state = { number: '232', date: '2026-10-08', category: 'H EINST Y', description: 'Patientenrettung mittels Drehleiter', vehicles, crop: {} };
+    assert.deepEqual(renderPost({ getContext: () => ctx }, state, config, null, scale), []);
+    const description = texts.filter(item => item.y >= layout.description.y && item.y < layout.vehicles.y);
+    assert.ok(description.every(item => item.color === (enabled ? '#235CA1' : '#12222b')));
+    const lines = texts.filter(item => item.y >= layout.vehicles.y && item.y < 1135);
+    assert.equal(lines.length, 2);
+    assert.ok(lines.every(item => /32px/.test(item.font)));
+    assert.equal(lines.map(item => item.text).join(' '), 'Fahrzeuge: ' + vehicles.join(' · '));
+    assert.ok(layout.description.y - (layout.photo.y + layout.photo.height) >= 60);
   }
 });
