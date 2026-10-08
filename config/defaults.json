@@ -177,5 +177,6 @@
     "Unwettereinsatz",
     "Kleinbrand"
   ],
-  "categoryCatalogVersion": 1
+  "categoryCatalogVersion": 1,
+  "descriptionUsesCategoryColor": false
 }

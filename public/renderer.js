@@ -34,6 +34,7 @@ function drawText(ctx, text, box, color, warnings, weight = 700) {
   if (fit.overflow) warnings.push('Text ist zu lang: „' + String(text).slice(0, 45) + '…“');
   ctx.save(); ctx.beginPath(); ctx.rect(box.x, box.y, box.width, box.height); ctx.clip();
   ctx.fillStyle = color; ctx.textBaseline = 'top';
+  if (box.contrast) { ctx.shadowColor = readableColor(color) + '99'; ctx.shadowBlur = 2; }
   ctx.textAlign = box.align || 'left';
   const x = box.align === 'right' ? box.x + box.width : box.align === 'center' ? box.x + box.width / 2 : box.x;
   fit.lines.forEach((line, i) => ctx.fillText(line, x, box.y + i * fit.size * 1.15));
@@ -64,16 +65,8 @@ export function renderPost(canvas, state, config, image, scale = 1, backgroundIm
   const warnings = [], category = config.categories.find(item => item.code === normalizeCategoryCode(state.category)) || config.categories[0];
   const colors = { background: '#F8F7F3', header: '#142831', footer: '#142831', ...config.colors };
   const textColor = readableColor(colors.background), headerText = readableColor(colors.header), footerText = readableColor(colors.footer);
-  drawBackground(ctx, layout.width, layout.height, colors.background, config.background, backgroundImage);
+  drawBackground(ctx, layout.width, layout.height, colors.background, { ...config.background, gradientAngle: 90 }, backgroundImage);
   if (config.background?.imageData && !backgroundImage) warnings.push('Hintergrundbild konnte noch nicht geladen werden.');
-  if (backgroundImage || config.background?.gradientEnabled) {
-    // Fade into a full-width reading area without a hard rectangular edge.
-    const scrim = ctx.createLinearGradient(0, 838, 0, 1280);
-    scrim.addColorStop(0, colors.background + '00');
-    scrim.addColorStop(.12, colors.background + 'e6');
-    scrim.addColorStop(1, colors.background + 'e6');
-    ctx.fillStyle = scrim; ctx.fillRect(0, 838, layout.width, 442);
-  }
   ctx.fillStyle = colors.header; ctx.fillRect(0, 0, layout.width, 245);
   ctx.fillStyle = category.color; ctx.fillRect(0, 0, layout.width, 18);
   const brand = drawText(ctx, config.brand.toUpperCase(), { x: 60, y: 59, width: 690, height: 45, maxSize: 30, minSize: 14, maxLines: 1 }, headerText, warnings);
@@ -102,19 +95,30 @@ export function renderPost(canvas, state, config, image, scale = 1, backgroundIm
   const tagWidth = Math.min(photo.width - 48, Math.max(126, Math.ceil(ctx.measureText(category.code).width) + 48));
   ctx.fillStyle = category.color; ctx.fillRect(84, 752, tagWidth, 62);
   drawText(ctx, category.code, { x: 96, y: 765, width: tagWidth - 24, height: 40, maxSize: 32, minSize: 14, maxLines: 1, align: 'center' }, readableColor(category.color), warnings);
-  drawText(ctx, state.description || 'Kurzbeschreibung des Einsatzes', layout.description, textColor, warnings);
+  // Sample the actual background for contrast without covering the continuous gradient.
+  const bodyBox = box => {
+    let color = textColor;
+    if (ctx.getImageData) {
+      const pixel = ctx.getImageData(Math.round((box.x + box.width / 2) * scale), Math.round(box.y * scale), 1, 1).data;
+      color = readableColor('#' + [...pixel].slice(0, 3).map(value => value.toString(16).padStart(2, '0')).join(''));
+    }
+    return { ...box, contrast: Boolean(backgroundImage || config.background?.gradientEnabled), color };
+  };
+  const description = bodyBox(layout.description);
+  drawText(ctx, state.description || 'Kurzbeschreibung des Einsatzes', description, config.descriptionUsesCategoryColor ? category.color : description.color, warnings);
   const selectedVehicles = (config.vehicles || []).filter(code => (state.vehicles || []).includes(code));
-  if (selectedVehicles.length) drawText(ctx, 'Fahrzeuge: ' + selectedVehicles.join(' · '), layout.vehicles, textColor, warnings, 600);
-  ctx.strokeStyle = textColor; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(60, 1135); ctx.lineTo(1020, 1135); ctx.stroke();
-  const label = { y: 1155, height: 28, maxSize: 24, minSize: 18, maxLines: 1 };
-  drawText(ctx, 'ALARMIERUNG', { ...label, x: layout.time.x, width: layout.time.width }, textColor, warnings);
-  drawText(ctx, 'EINSATZORT', { ...label, x: layout.location.x, width: layout.location.width, align: 'center' }, textColor, warnings);
-  drawText(ctx, state.time ? state.time + ' Uhr' : '—', layout.time, textColor, warnings);
+  if (selectedVehicles.length) drawText(ctx, 'Fahrzeuge: ' + selectedVehicles.join(' · '), bodyBox(layout.vehicles), bodyBox(layout.vehicles).color, warnings, 600);
+  const detailsColor = bodyBox(layout.time).color;
+  ctx.strokeStyle = detailsColor; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(60, 1135); ctx.lineTo(1020, 1135); ctx.stroke();
+  const label = { contrast: Boolean(backgroundImage || config.background?.gradientEnabled), y: 1155, height: 28, maxSize: 24, minSize: 18, maxLines: 1 };
+  drawText(ctx, 'ALARMIERUNG', { ...label, x: layout.time.x, width: layout.time.width }, detailsColor, warnings);
+  drawText(ctx, 'EINSATZORT', { ...label, x: layout.location.x, width: layout.location.width, align: 'center' }, detailsColor, warnings);
+  drawText(ctx, state.time ? state.time + ' Uhr' : '—', bodyBox(layout.time), bodyBox(layout.time).color, warnings);
   if ((state.duration || '').trim()) {
-    drawText(ctx, 'EINSATZDAUER', { ...label, x: layout.duration.x, width: layout.duration.width, align: 'center' }, textColor, warnings);
-    drawText(ctx, state.duration.trim(), layout.duration, textColor, warnings, 600);
+    drawText(ctx, 'EINSATZDAUER', { ...label, x: layout.duration.x, width: layout.duration.width, align: 'center' }, detailsColor, warnings);
+    drawText(ctx, state.duration.trim(), bodyBox(layout.duration), bodyBox(layout.duration).color, warnings, 600);
   }
-  drawText(ctx, state.location || 'Einsatzort', layout.location, textColor, warnings, 600);
+  drawText(ctx, state.location || 'Einsatzort', bodyBox(layout.location), bodyBox(layout.location).color, warnings, 600);
   ctx.fillStyle = colors.footer; ctx.fillRect(0, 1280, 1080, 70);
   drawText(ctx, config.footer, { x: 60, y: 1302, width: 960, height: 28, maxSize: 21, minSize: 13, maxLines: 1, align: 'center' }, footerText, warnings, 400);
   return warnings;

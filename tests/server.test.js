@@ -107,6 +107,7 @@ test('persists posting templates, external resources and background settings; mi
   const { request } = await fixture(t);
   const initial = await (await request('/api/config')).json();
   const changed = structuredClone(migrated);
+  changed.descriptionUsesCategoryColor = true;
   changed.captionTemplate = '🚒 {fahrzeuge}\n👮 {weitere_kraefte}';
   changed.externalResources = ['Polizei', 'OR1-10'];
   changed.background.gradientEnabled = true; changed.background.gradientAngle = 45;
@@ -188,4 +189,11 @@ test('upgrades saved incident categories once, preserves team settings and retai
   const restarted = await fixture(t, token, dataDir);
   assert.deepEqual((await (await restarted.request('/api/config')).json()).config, edited);
   assert.equal(await fs.readFile(path.join(dataDir, 'config.before-category-catalog-v1.json'), 'utf8'), raw);
+});
+
+test('defaults the description color toggle for older settings and rejects invalid values', () => {
+  const legacy = structuredClone(defaults);
+  delete legacy.descriptionUsesCategoryColor;
+  assert.equal(validateConfig(legacy).descriptionUsesCategoryColor, false);
+  assert.throws(() => validateConfig({ ...legacy, descriptionUsesCategoryColor: 'yes' }));
 });

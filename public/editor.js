@@ -379,7 +379,7 @@ $('open-admin').addEventListener('click', () => {
   $('admin-gradient-enabled').checked = config.background.gradientEnabled;
   $('admin-gradient-start').value = config.background.gradientStart;
   $('admin-gradient-end').value = config.background.gradientEnd;
-  $('admin-gradient-angle').value = config.background.gradientAngle;
+  $('admin-description-color').checked = config.descriptionUsesCategoryColor ?? false;
   $('admin-background-opacity').value = config.background.imageOpacity;
   adminBackgroundGeneration++; adminBackgroundData = config.background.imageData; updateBackgroundPreview();
   $('category-rows').replaceChildren(...config.categories.map(categoryRow));
@@ -397,6 +397,7 @@ $('admin-form').addEventListener('submit', async event => {
   event.preventDefault(); errorAt('admin-error', '');
   const categories = [...$('category-rows').children].map(row => Object.fromEntries([...row.querySelectorAll('[data-field]')].map(input => [input.dataset.field, input.value])));
   const nextConfig = {
+    descriptionUsesCategoryColor: $('admin-description-color').checked,
     categoryCatalogVersion: config.categoryCatalogVersion, brand: $('admin-brand').value, footer: $('admin-footer').value, categories,
     presets: $('admin-presets').value.split('\n').map(s => s.trim()).filter(Boolean),
     colors: Object.fromEntries(['background', 'header', 'footer'].map(key => [key, $('admin-color-' + key).value])),
@@ -404,7 +405,7 @@ $('admin-form').addEventListener('submit', async event => {
     externalResources: $('admin-external').value.split('\n').map(s => s.trim()).filter(Boolean),
     captionTemplate: $('admin-caption-template').value,
     background: { gradientEnabled: $('admin-gradient-enabled').checked, gradientStart: $('admin-gradient-start').value,
-      gradientEnd: $('admin-gradient-end').value, gradientAngle: Number($('admin-gradient-angle').value),
+      gradientEnd: $('admin-gradient-end').value, gradientAngle: 90,
       imageData: adminBackgroundData, imageOpacity: Number($('admin-background-opacity').value) }
   };
   $('save-config').disabled = true;
