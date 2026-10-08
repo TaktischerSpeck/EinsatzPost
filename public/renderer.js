@@ -67,9 +67,12 @@ export function renderPost(canvas, state, config, image, scale = 1, backgroundIm
   drawBackground(ctx, layout.width, layout.height, colors.background, config.background, backgroundImage);
   if (config.background?.imageData && !backgroundImage) warnings.push('Hintergrundbild konnte noch nicht geladen werden.');
   if (backgroundImage || config.background?.gradientEnabled) {
-    // Keep the text area readable over arbitrary photos and gradients.
-    ctx.save(); ctx.globalAlpha = .9; ctx.fillStyle = colors.background;
-    ctx.fillRect(40, 860, 1000, 420); ctx.restore();
+    // Fade into a full-width reading area without a hard rectangular edge.
+    const scrim = ctx.createLinearGradient(0, 838, 0, 1280);
+    scrim.addColorStop(0, colors.background + '00');
+    scrim.addColorStop(.12, colors.background + 'e6');
+    scrim.addColorStop(1, colors.background + 'e6');
+    ctx.fillStyle = scrim; ctx.fillRect(0, 838, layout.width, 442);
   }
   ctx.fillStyle = colors.header; ctx.fillRect(0, 0, layout.width, 245);
   ctx.fillStyle = category.color; ctx.fillRect(0, 0, layout.width, 18);
@@ -81,7 +84,7 @@ export function renderPost(canvas, state, config, image, scale = 1, backgroundIm
   const photo = layout.photo;
   ctx.save(); ctx.beginPath(); ctx.rect(photo.x, photo.y, photo.width, photo.height); ctx.clip();
   if (image) {
-    ctx.fillStyle = '#ffffff'; ctx.fillRect(photo.x, photo.y, photo.width, photo.height);
+    // Let the configured background show through beside contained images.
     const crop = cropGeometry(image, state.crop);
     ctx.drawImage(image, crop.x, crop.y, crop.width, crop.height);
   }
