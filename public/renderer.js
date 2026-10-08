@@ -1,3 +1,4 @@
+import { normalizeCategoryCode } from './categories.js';
 import { layout } from './layout.js';
 import { drawBackground } from './background.js';
 const fontFamily = 'Arial, Helvetica, sans-serif';
@@ -60,7 +61,7 @@ function readableColor(hex) {
 export function renderPost(canvas, state, config, image, scale = 1, backgroundImage = null) {
   canvas.width = layout.width * scale; canvas.height = layout.height * scale;
   const ctx = canvas.getContext('2d'); ctx.scale(scale, scale);
-  const warnings = [], category = config.categories.find(item => item.code === state.category) || config.categories[0];
+  const warnings = [], category = config.categories.find(item => item.code === normalizeCategoryCode(state.category)) || config.categories[0];
   const colors = { background: '#F8F7F3', header: '#142831', footer: '#142831', ...config.colors };
   const textColor = readableColor(colors.background), headerText = readableColor(colors.header), footerText = readableColor(colors.footer);
   drawBackground(ctx, layout.width, layout.height, colors.background, config.background, backgroundImage);
@@ -94,8 +95,10 @@ export function renderPost(canvas, state, config, image, scale = 1, backgroundIm
     ctx.font = '400 25px ' + fontFamily; ctx.fillText('Bild hinzufügen · Ausschnitt wählen', 540, 580); ctx.textAlign = 'left';
   }
   ctx.restore();
-  ctx.fillStyle = category.color; ctx.fillRect(84, 752, 126, 62);
-  ctx.fillStyle = readableColor(category.color); ctx.font = '700 32px ' + fontFamily; ctx.textAlign = 'center'; ctx.fillText(category.code, 147, 794); ctx.textAlign = 'left';
+  ctx.font = '700 32px ' + fontFamily;
+  const tagWidth = Math.min(photo.width - 48, Math.max(126, Math.ceil(ctx.measureText(category.code).width) + 48));
+  ctx.fillStyle = category.color; ctx.fillRect(84, 752, tagWidth, 62);
+  drawText(ctx, category.code, { x: 96, y: 765, width: tagWidth - 24, height: 40, maxSize: 32, minSize: 14, maxLines: 1, align: 'center' }, readableColor(category.color), warnings);
   drawText(ctx, state.description || 'Kurzbeschreibung des Einsatzes', layout.description, textColor, warnings);
   drawText(ctx, category.keyword, layout.keyword, category.color, warnings, 600);
   const selectedVehicles = (config.vehicles || []).filter(code => (state.vehicles || []).includes(code));
