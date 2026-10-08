@@ -14,13 +14,13 @@ App: http://localhost:3000. No external packages or build step are required. To 
 ## Features
 
 - Enter incident details and select a category.
-- Use the fixed incident keyword and tag color configured in the team settings.
+- Use one short incident description and the tag color configured in the team settings.
 - Choose a JPG, PNG, or WebP image, or provide an HTTPS image URL with CORS support.
 - Move and zoom the photo within the fixed frame, or adjust it with the controls.
 - Automatic text sizing; text overflow disables export.
 - Export PNG and JPEG images at 1080 × 1350 or 2160 × 2700 pixels.
 - One local draft, including its image, is stored per browser.
-- Admin settings for the name, footer, categories, colors, keywords, and text suggestions.
+- Admin settings for the name, footer, categories, colors, and text suggestions.
 
 Incident details and photos are not sent to the server when a graphic is created. The server stores global team settings, including an optional background image. The standard editor is accessible without signing in. The current design is not an exact copy of the Canva template; its precise guides and original media are not available yet.
 
@@ -99,7 +99,7 @@ Portrait images are automatically displayed in full and centered, with white bar
 
 In the team settings, you can set separate background colors for the main area, header, and footer of the incident graphic. The text color adjusts to light or dark backgrounds. The white bars around portrait images remain white.
 
-Vehicle abbreviations are managed in an expandable list, one abbreviation per line (for example, HLF20, ELW, or DLK23/12). Multiple vehicles can be selected in the incident form. Their abbreviations appear below the incident keyword and are saved with the draft. The vehicle line is omitted when no vehicle is selected.
+Vehicle abbreviations are managed in an expandable list, one abbreviation per line (for example, HLF20, ELW, or DLK23/12). Multiple vehicles can be selected in the incident form. Their abbreviations appear below the short description and are saved with the draft. The vehicle line is omitted when no vehicle is selected.
 
 The year is taken from the incident date and displayed prominently in the upper-right corner. The date in its original position shows only the day and month. Existing team settings are automatically extended with the new defaults, while existing category colors are preserved.
 
@@ -121,7 +121,7 @@ Under Format Your Own Message, you can edit emojis, labels, order, and line brea
 | {fahrzeuge} | Selected vehicle abbreviations, separated by commas |
 | {weitere_kraefte} | Free text describing additional forces |
 | {kategorie} | Category abbreviation |
-| {stichwort} | Fixed incident keyword |
+| {stichwort} | Legacy alias for the short description; use {beschreibung} for new templates |
 | {beschreibung} | Short description |
 | {feuerwehr} | Fire department name |
 
@@ -172,7 +172,7 @@ The editor supports up to 100 categories so custom types can coexist with the ca
 
 At the first server start after this update, saved settings are upgraded once:
 missing types are added, compact codes such as `F1` become `F 1`, and the family
-colors are applied. Existing custom labels, keywords and other team settings are
+colors are applied. Existing custom labels and other team settings are
 preserved. The original settings remain in
 `DATA_DIR/config.before-category-catalog-v1.json`. Later admin edits or removals
 are retained across restarts. Older local drafts with compact codes remain readable.

@@ -100,7 +100,6 @@ export function renderPost(canvas, state, config, image, scale = 1, backgroundIm
   ctx.fillStyle = category.color; ctx.fillRect(84, 752, tagWidth, 62);
   drawText(ctx, category.code, { x: 96, y: 765, width: tagWidth - 24, height: 40, maxSize: 32, minSize: 14, maxLines: 1, align: 'center' }, readableColor(category.color), warnings);
   drawText(ctx, state.description || 'Kurzbeschreibung des Einsatzes', layout.description, textColor, warnings);
-  drawText(ctx, category.keyword, layout.keyword, category.color, warnings, 600);
   const selectedVehicles = (config.vehicles || []).filter(code => (state.vehicles || []).includes(code));
   if (selectedVehicles.length) drawText(ctx, 'Fahrzeuge: ' + selectedVehicles.join(' · '), layout.vehicles, textColor, warnings, 600);
   ctx.strokeStyle = textColor; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(60, 1135); ctx.lineTo(1020, 1135); ctx.stroke();
