@@ -51,9 +51,11 @@ function validateConfig(input) {
     const bytes = Buffer.from(background.imageData.split(',')[1], 'base64');
     if (bytes.length < 4 || bytes[0] !== 255 || bytes[1] !== 216 || bytes[2] !== 255) throw new Error('Invalid JPEG');
   }
+  const descriptionUsesCategoryColor = input.descriptionUsesCategoryColor ?? false;
+  if (typeof descriptionUsesCategoryColor !== 'boolean') throw new Error('Invalid description color toggle');
   const categoryCatalogVersion = input.categoryCatalogVersion ?? 0;
   if (!Number.isInteger(categoryCatalogVersion) || categoryCatalogVersion < 0 || categoryCatalogVersion > 1) throw new Error('Invalid category catalog version');
-  return { categoryCatalogVersion, brand: input.brand.trim(), footer: input.footer.trim(), colors, vehicles, externalResources: externalResources.map(value => value.trim()),
+  return { categoryCatalogVersion, descriptionUsesCategoryColor, brand: input.brand.trim(), footer: input.footer.trim(), colors, vehicles, externalResources: externalResources.map(value => value.trim()),
     captionTemplate, background: { gradientEnabled: background.gradientEnabled, gradientStart: background.gradientStart, gradientEnd: background.gradientEnd,
       gradientAngle: background.gradientAngle, imageData: background.imageData, imageOpacity: background.imageOpacity },
     categories, presets: input.presets.map(item => item.trim()) };
