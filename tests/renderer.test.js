@@ -144,6 +144,7 @@ test('renders optional duration centrally with alarm left and location centered 
     const state = { number: '123', date: '2026-10-07', time: '12:00', duration, category: 'F1', description: 'Ausgelöste Brandmeldeanlage', location: 'Groß-Bieberau', vehicles: ['HLF20', 'ELW'], crop: {} };
     const config = { ...defaults, vehicles: ['HLF20', 'ELW'] };
     assert.deepEqual(renderPost({ getContext: () => ctx }, state, config, null, scale), []);
+    assert.ok(!texts.some(item => item.text === 'Brandeinsatz'));
     assert.ok(texts.some(item => item.text === '12:00 Uhr' && item.x === 60 && item.align === 'left'));
     assert.ok(texts.some(item => item.text === 'Groß-Bieberau' && item.x === 870 && item.align === 'center'));
     assert.ok(texts.some(item => item.text === 'EINSATZORT' && item.x === 870 && item.align === 'center'));
@@ -152,10 +153,9 @@ test('renders optional duration centrally with alarm left and location centered 
     if (duration?.trim()) assert.ok(texts.some(item => item.text === duration && item.x === 540 && item.align === 'center'));
   }
   assert.ok(layout.description.height < 146);
-  assert.ok(layout.keyword.maxSize > 34);
   assert.ok(layout.vehicles.maxSize > 20);
-  assert.ok(layout.description.y + layout.description.height < layout.keyword.y);
-  assert.ok(layout.keyword.y + layout.keyword.height < layout.vehicles.y);
+  assert.ok(layout.description.y + layout.description.height < layout.vehicles.y);
+  assert.equal(layout.keyword, undefined);
   assert.ok(layout.vehicles.y + layout.vehicles.height < 1135);
   assert.ok(layout.location.y + layout.location.height < 1280);
 });

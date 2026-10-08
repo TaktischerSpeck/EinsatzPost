@@ -3,7 +3,7 @@ export const placeholders = [
   ['einsatznummer', 'Einsatznummer'], ['ort', 'Ort'], ['datum', 'Datum ausgeschrieben'],
   ['einsatzdauer', 'Einsatzdauer'], ['datum_kurz', 'Datum kurz'], ['jahr', 'Jahr'], ['zeit', 'Uhrzeit'],
   ['fahrzeuge', 'Fahrzeuge'], ['weitere_kraefte', 'Weitere Kräfte'],
-  ['kategorie', 'Kategorie'], ['stichwort', 'Stichwort'], ['beschreibung', 'Kurzbeschreibung'],
+  ['kategorie', 'Kategorie'], ['beschreibung', 'Kurzbeschreibung'],
   ['feuerwehr', 'Feuerwehrname']
 ];
 const tokens = /\{\{([a-z_][a-z0-9_]*)\}\}|\{([a-z_][a-z0-9_]*)\}|<([a-z_][a-z0-9_]*)>/gi;
@@ -23,7 +23,8 @@ export function captionValues(state, config) {
     jahr: date ? state.date.slice(0, 4) : '', zeit: state.time || '',
     fahrzeuge: (config.vehicles || []).filter(code => (state.vehicles || []).includes(code)).join(', '),
     weitere_kraefte: (state.externalResources || '').trim().replace(/\s*\n\s*/g, ', '),
-    kategorie: category?.code || '', stichwort: category?.keyword || '',
+    // Preserve older caption templates by mapping their keyword token to the description.
+    kategorie: category?.code || '', stichwort: (state.description || '').trim(),
     beschreibung: (state.description || '').trim(), feuerwehr: config.brand || ''
   };
 }

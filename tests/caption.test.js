@@ -14,7 +14,7 @@ test('generates the requested posting text with German date and selected resourc
 test('supports braces, double braces and angle brackets without recursive substitution', async () => {
   const { generateCaption } = await load();
   const result = generateCaption('🧯 {einsatznummer} / {{kategorie}} / <stichwort>\n{beschreibung}', { ...state, description: '<ort> {fahrzeuge}' }, config);
-  assert.equal(result.text, '🧯 145 / F 1 / Brandeinsatz\n<ort> {fahrzeuge}');
+  assert.equal(result.text, '🧯 145 / F 1 / <ort> {fahrzeuge}\n<ort> {fahrzeuge}');
 });
 test('optionally hides lines with empty fields and preserves user formatting', async () => {
   const { generateCaption } = await load();
@@ -54,4 +54,10 @@ test('preserves exact category names and recognizes legacy draft codes', async (
     assert.equal(generateCaption('{kategorie}', { ...state, category: code }, config).text, code);
   }
   assert.equal(generateCaption('{kategorie}', { ...state, category: 'R2' }, config).text, 'R 2');
+});
+
+test('uses only the short description and keeps legacy caption templates compatible', async () => {
+  const { placeholders, generateCaption } = await load();
+  assert.ok(!placeholders.some(([key]) => key === 'stichwort'));
+  assert.equal(generateCaption('{stichwort}', state, { ...config, categories: [{ code: 'F 1', keyword: 'Obsolete keyword' }] }).text, 'Kleinbrand');
 });

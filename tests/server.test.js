@@ -176,7 +176,7 @@ test('upgrades saved incident categories once, preserves team settings and retai
   assert.equal(loaded.config.brand, legacy.brand);
   assert.deepEqual(loaded.config.vehicles, legacy.vehicles);
   assert.equal(loaded.config.captionTemplate, legacy.captionTemplate);
-  assert.equal(loaded.config.categories.find(item => item.code === 'F 1').keyword, 'Custom fire keyword');
+  assert.equal(loaded.config.categories.find(item => item.code === 'F 1').keyword, undefined);
   assert.equal(loaded.config.categories.find(item => item.code === 'F 1').label, 'Custom fire label');
   assert.equal(loaded.config.categories.find(item => item.code === 'H SOND').color, '#235CA1');
   assert.equal(loaded.config.categories.find(item => item.code === 'SONDER').color, '#aabbcc');

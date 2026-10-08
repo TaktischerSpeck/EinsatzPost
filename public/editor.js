@@ -26,8 +26,6 @@ function render() {
   if (!config) return;
   warnings = renderPost($('preview'), state(), config, image, 1, backgroundImage);
   renderCaption();
-  const category = config.categories.find(item => item.code === $('category').value) || config.categories[0];
-  $('keyword-label').textContent = category.keyword;
   $('char-count').textContent = $('description').value.length + ' / 200';
   errorAt('render-warning', warnings.join(' '));
   const valid = $('post-form').checkValidity() && !!image && !warnings.length && !busy;
@@ -357,7 +355,7 @@ $('share').addEventListener('click', () => runExport(async blob => {
 
 function categoryRow(item) {
   const row = document.createElement('div'); row.className = 'category-row';
-  for (const [key, label, max] of [['code', 'Einsatzart', 60], ['label', 'Bezeichnung', 60], ['keyword', 'Festes Stichwort', 100]]) {
+  for (const [key, label, max] of [['code', 'Einsatzart', 60], ['label', 'Bezeichnung', 60]]) {
     const wrapper = document.createElement('label'), input = document.createElement('input');
     wrapper.textContent = label; input.value = item[key]; input.dataset.field = key; input.maxLength = max; input.required = true;
     wrapper.append(input); row.append(wrapper);
@@ -393,7 +391,7 @@ function closeAdmin() { adminBackgroundGeneration++; $('admin-token').value = ''
 $('admin-dialog').addEventListener('close', () => { adminBackgroundGeneration++; $('admin-token').value = ''; });
 $('add-category').addEventListener('click', () => {
   if ($('category-rows').children.length >= 40) return notify('Maximal 40 Kategorien möglich.');
-  $('category-rows').append(categoryRow({ code: '', label: '', keyword: '', color: '#297b8d' }));
+  $('category-rows').append(categoryRow({ code: '', label: '', color: '#297b8d' }));
 });
 $('admin-form').addEventListener('submit', async event => {
   event.preventDefault(); errorAt('admin-error', '');
