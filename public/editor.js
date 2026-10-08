@@ -1,6 +1,6 @@
 import { normalizeCategoryCode } from './categories.js';
-import { renderPost, cropGeometry } from './renderer.js';
-import { layout } from './layout.js';
+import { renderPost, cropGeometry } from './renderer.js?v=20261008-text-color';
+import { layout } from './layout.js?v=20261008-text-color';
 import { generateCaption, placeholders } from './caption.js';
 
 const $ = id => document.getElementById(id);
@@ -372,7 +372,7 @@ function categoryRow(item) {
 $('open-admin').addEventListener('click', () => {
   if (!config) return;
   $('admin-brand').value = config.brand; $('admin-footer').value = config.footer; $('admin-presets').value = config.presets.join('\n');
-  for (const key of ['background', 'header', 'footer']) $('admin-color-' + key).value = config.colors[key];
+  for (const key of ['background', 'header', 'footer', 'text']) $('admin-color-' + key).value = config.colors[key];
   $('admin-vehicles').value = config.vehicles.join('\n');
   $('admin-external').value = config.externalResources.join('\n');
   $('admin-caption-template').value = config.captionTemplate;
@@ -400,7 +400,7 @@ $('admin-form').addEventListener('submit', async event => {
     descriptionUsesCategoryColor: $('admin-description-color').checked,
     categoryCatalogVersion: config.categoryCatalogVersion, brand: $('admin-brand').value, footer: $('admin-footer').value, categories,
     presets: $('admin-presets').value.split('\n').map(s => s.trim()).filter(Boolean),
-    colors: Object.fromEntries(['background', 'header', 'footer'].map(key => [key, $('admin-color-' + key).value])),
+    colors: Object.fromEntries(['background', 'header', 'footer', 'text'].map(key => [key, $('admin-color-' + key).value])),
     vehicles: $('admin-vehicles').value.split('\n').map(s => s.trim().toUpperCase()).filter(Boolean),
     externalResources: $('admin-external').value.split('\n').map(s => s.trim()).filter(Boolean),
     captionTemplate: $('admin-caption-template').value,

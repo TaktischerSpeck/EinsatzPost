@@ -92,7 +92,7 @@ test('renders custom backgrounds, selected vehicles, matched header sizes and a 
     assert.ok(!texts.some(text => text.args[0] === '05.10.2026'));
     assert.ok(texts.some(text => text.args[0] === 'Fahrzeuge: HLF20 · ELW'));
     assert.ok(!texts.some(text => text.args[0].includes('UNKNOWN')));
-    assert.equal(texts.find(text => text.args[0] === 'Kleinbrand').color, '#ffffff');
+    assert.equal(texts.find(text => text.args[0] === 'Kleinbrand').color, '#12222B');
     assert.equal(year.color, '#12222b');
   }
 });
@@ -207,11 +207,37 @@ test('wraps long vehicle lists at normal size and applies the optional category 
     const state = { number: '232', date: '2026-10-08', category: 'H EINST Y', description: 'Patientenrettung mittels Drehleiter', vehicles, crop: {} };
     assert.deepEqual(renderPost({ getContext: () => ctx }, state, config, null, scale), []);
     const description = texts.filter(item => item.y >= layout.description.y && item.y < layout.vehicles.y);
-    assert.ok(description.every(item => item.color === (enabled ? '#235CA1' : '#12222b')));
+    assert.ok(description.every(item => item.color === (enabled ? '#235CA1' : '#12222B')));
     const lines = texts.filter(item => item.y >= layout.vehicles.y && item.y < 1135);
     assert.equal(lines.length, 2);
     assert.ok(lines.every(item => /32px/.test(item.font)));
-    assert.equal(lines.map(item => item.text).join(' '), 'Fahrzeuge: ' + vehicles.join(' · '));
+    assert.equal(lines.map(item => item.text).join(' · '), 'Fahrzeuge: ' + vehicles.join(' · '));
+    assert.ok(lines.every(item => !item.text.startsWith('·')));
     assert.ok(layout.description.y - (layout.photo.y + layout.photo.height) >= 60);
   }
+});
+
+test('uses the configured text color for incident details at both export sizes', async () => {
+  const { renderPost } = await load();
+  for (const scale of [1, 2]) {
+    const ctx = context(), texts = [];
+    ctx.getImageData = () => { throw new Error('Explicit colors must not sample the canvas'); };
+    ctx.fillText = text => texts.push({ text, color: ctx.fillStyle });
+    const config = { ...defaults, colors: { ...defaults.colors, text: '#F7FAFC' }, vehicles: ['HLF20'] };
+    const state = { number: '123', date: '2026-10-08', category: 'H 1', description: 'Patientenrettung', time: '12:00', duration: '45 Min.', location: 'Ober-Ramstadt', vehicles: ['HLF20'], crop: {} };
+    assert.deepEqual(renderPost({ getContext: () => ctx }, state, config, null, scale), []);
+    for (const text of ['Patientenrettung', 'Fahrzeuge: HLF20', 'ALARMIERUNG', 'EINSATZORT', '12:00 Uhr', 'EINSATZDAUER', '45 Min.', 'Ober-Ramstadt']) {
+      assert.equal(texts.find(item => item.text === text).color, '#F7FAFC');
+    }
+  }
+});
+
+test('vehicle wrapping preserves complete abbreviations and warns instead of truncating overflow', async () => {
+  const { fitVehicleLines } = await load();
+  const { layout } = await import('../public/layout.js');
+  const fit = fitVehicleLines(context(), ['PKW', 'MTW', 'KDOW', 'ELW', 'TLF 20/40 SL', 'DLAK 23/12', 'HLF20', 'LF 16/12', 'GW-L'], layout.vehicles);
+  assert.equal(fit.lines.length, 2);
+  assert.equal(fit.size, 32);
+  for (const code of ['TLF 20/40 SL', 'DLAK 23/12', 'LF 16/12']) assert.ok(fit.lines.some(line => line.includes(code)));
+  assert.equal(fitVehicleLines(context(), Array(40).fill('LONG VEHICLE 123'), layout.vehicles).overflow, true);
 });
