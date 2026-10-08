@@ -55,7 +55,7 @@ test('contain keeps portrait and landscape images complete and centered', async 
   assert.equal(portrait.height, 566);
   assert.equal(portrait.width, 283);
 });
-test('contain paints white margins and uses identical geometry in both export resolutions', async () => {
+test('contain preserves background margins and uses identical geometry in both export resolutions', async () => {
   const { renderPost } = await load();
   for (const scale of [1, 2]) {
     const ctx = context(), fills = [], draws = [], scales = [];
@@ -66,7 +66,7 @@ test('contain paints white margins and uses identical geometry in both export re
     const image = { width: 600, height: 1200 };
     const state = { number: '1', date: '2026-10-05', time: '18:24', category: 'F1', description: 'Kleinbrand', location: 'Ober-Ramstadt', crop: { mode: 'contain', x: .5, y: .5, zoom: 3 } };
     assert.deepEqual(renderPost(canvas, state, defaults, image, scale), []);
-    assert.ok(fills.some(fill => fill.color === '#ffffff' && JSON.stringify(fill.args) === '[60,272,960,566]'));
+    assert.ok(!fills.some(fill => JSON.stringify(fill.args) === '[60,272,960,566]'));
     assert.deepEqual(draws[0], [image, 398.5, 272, 283, 566]);
     assert.deepEqual(scales, [[scale, scale]]);
     assert.equal(canvas.width, 1080 * scale);
@@ -96,22 +96,29 @@ test('renders custom backgrounds, selected vehicles, matched header sizes and a 
     assert.equal(year.color, '#12222b');
   }
 });
-test('keeps portrait margins white over a loaded team background at both export sizes', async () => {
+test('preserves portrait background margins and fades the reading area at both export sizes', async () => {
   const { renderPost } = await load();
   const config = structuredClone(defaults);
   config.background.imageData = 'loaded-background';
   config.background.gradientEnabled = true;
   const background = { width: 2000, height: 500 }, photo = { width: 600, height: 1200 };
   for (const scale of [1, 2]) {
-    const ctx = context(), draws = [], fills = [];
+    const ctx = context(), draws = [], fills = [], gradients = [];
+    ctx.createLinearGradient = (...args) => {
+      const gradient = { args, stops: [], addColorStop(offset, color) { this.stops.push([offset, color]); } };
+      gradients.push(gradient); return gradient;
+    };
     ctx.drawImage = (...args) => draws.push(args);
     ctx.fillRect = (...args) => fills.push({ color: ctx.fillStyle, args });
     const state = { number: '124', date: '2026-10-05', time: '18:24', category: 'F1', description: 'Kleinbrand', location: 'Ober-Ramstadt', crop: { mode: 'contain', x: .5, y: .5, zoom: 1 } };
     assert.deepEqual(renderPost({ getContext: () => ctx }, state, config, photo, scale, background), []);
     assert.equal(draws[0][0], background);
-    assert.ok(fills.some(fill => JSON.stringify(fill.args) === '[40,860,1000,420]'));
+    assert.ok(!fills.some(fill => JSON.stringify(fill.args) === '[40,860,1000,420]'));
+    const scrim = gradients.find(gradient => JSON.stringify(gradient.args) === '[0,838,0,1280]');
+    assert.deepEqual(scrim.stops, [[0, defaults.colors.background + '00'], [.12, defaults.colors.background + 'e6'], [1, defaults.colors.background + 'e6']]);
+    assert.ok(fills.some(fill => fill.color === scrim && JSON.stringify(fill.args) === '[0,838,1080,442]'));
     assert.deepEqual(draws[1], [photo, 398.5, 272, 283, 566]);
-    assert.ok(fills.some(fill => fill.color === '#ffffff' && JSON.stringify(fill.args) === '[60,272,960,566]'));
+    assert.ok(!fills.some(fill => JSON.stringify(fill.args) === '[60,272,960,566]'));
   }
   assert.ok(renderPost({ getContext: context }, { number: '1', date: '', category: 'F1', crop: {} }, config, null).some(warning => warning.includes('Hintergrundbild')));
 });
@@ -171,3 +178,4 @@ test('centers the graphic footer within its safe area at both export resolutions
     assert.equal(footer.x, 540); assert.equal(footer.align, 'center');
   }
 });
+
