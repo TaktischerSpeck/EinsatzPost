@@ -136,7 +136,7 @@ test('stores the uploaded background image across server restarts', async t => {
 });
 
 test('ships all 29 requested incident types with exact spacing and uniform family colors', () => {
-  const expected = ['R 2', 'R 1', 'R 0', 'Lohbergtunnel F Klein', 'H WASS Y', 'H KLEMM 2 Y', 'H KLEMM 1 Y', 'H GEFAHR 1', 'H GAS 2', 'H GAS 1', 'H EINST Y', 'H E-CALL Y', 'H ABST Y', 'H 2', 'H 1 Y – DLK', 'H 1 Y', 'H 1 – Ölspur', 'H 1', 'F WALD 2', 'F WALD 1', 'F RWM', 'F LKW / F ZUG', 'F BMA', 'F 3 Y', 'F 3', 'F 2 Y', 'F 2', 'F 1', 'Brandsicherheitsdienst'];
+  const expected = ['F 1', 'F 2', 'F 2 Y', 'F 3', 'F 3 Y', 'F BMA', 'F LKW / F ZUG', 'F RWM', 'F WALD 1', 'F WALD 2', 'H 1', 'H 1 – Ölspur', 'H 1 Y', 'H 1 Y – DLK', 'H 2', 'H ABST Y', 'H E-CALL Y', 'H EINST Y', 'H GAS 1', 'H GAS 2', 'H GEFAHR 1', 'H KLEMM 1 Y', 'H KLEMM 2 Y', 'H WASS Y', 'R 0', 'R 1', 'R 2', 'Brandsicherheitsdienst', 'Lohbergtunnel F Klein'];
   assert.deepEqual(defaults.categories.map(item => item.code), expected);
   const colors = { F: '#C83A35', H: '#235CA1', R: '#D65C9C' };
   for (const category of defaults.categories) {
@@ -203,4 +203,34 @@ test('migrates the default text color and rejects invalid configured text colors
   delete legacy.colors.text;
   assert.equal(validateConfig(legacy).colors.text, '#12222B');
   assert.throws(() => validateConfig({ ...legacy, colors: { ...legacy.colors, text: 'white' } }));
+});
+
+test('sorts saved categories naturally and upgrades the ladder without changing team content', async t => {
+  const saved = structuredClone(defaults);
+  saved.categories = [
+    { code: 'R 2', label: 'Rescue', color: '#123456' },
+    { code: 'F 10', label: 'Large fire', color: '#aabbcc' },
+    { code: 'H 2', label: 'Technical', color: '#112233' },
+    { code: 'F 2 Y', label: 'Fire rescue', color: '#445566' },
+    { code: 'F 2', label: 'Fire', color: '#778899' },
+    { code: 'F1', label: 'Small fire', color: '#aabbdd' }
+  ];
+  saved.vehicles = ['ELW', 'DLAK 23/12', 'DLA-K 23/12', 'HLF20'];
+  const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'einsatzpost-sorted-'));
+  t.after(() => fs.rm(dataDir, { recursive: true, force: true }));
+  await fs.writeFile(path.join(dataDir, 'config.json'), JSON.stringify(saved));
+  const { request } = await fixture(t, token, dataDir);
+  const loaded = await (await request('/api/config')).json();
+  assert.deepEqual(loaded.config.categories.map(item => item.code), ['F 1', 'F 2', 'F 2 Y', 'F 10', 'H 2', 'R 2']);
+  assert.equal(loaded.config.categories[0].label, 'Small fire');
+  assert.equal(loaded.config.categories[0].color, '#aabbdd');
+  assert.equal(loaded.config.categories.length, saved.categories.length);
+  assert.deepEqual(loaded.config.vehicles, ['ELW', 'DLA-K 23/12', 'HLF20']);
+  assert.equal(loaded.config.brand, saved.brand);
+  assert.deepEqual(loaded.config.background, saved.background);
+  const response = await request('/api/config', writeOptions(loaded.config, loaded.revision));
+  assert.equal(response.status, 200);
+  assert.deepEqual(JSON.parse(await fs.readFile(path.join(dataDir, 'config.json'), 'utf8')), loaded.config);
+  const restarted = await fixture(t, token, dataDir);
+  assert.deepEqual((await (await restarted.request('/api/config')).json()).config, loaded.config);
 });

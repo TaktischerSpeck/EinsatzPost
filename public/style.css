@@ -53,3 +53,7 @@
   #admin-dialog .dialog-actions{flex-wrap:wrap}
   #admin-dialog .dialog-actions .button{flex:1 1 180px}
 }
+
+.mode-fields{border-right:0;border-bottom:0;border-left:0;min-width:0;margin-right:0;margin-left:0;padding-right:0;padding-left:0}
+.post-type-label{margin-top:18px}
+.visually-hidden{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}

@@ -18,6 +18,9 @@ function validateConfig(input) {
     if (!item || !text(code, 60) || !/^[\p{L}\p{N}][\p{L}\p{N} /–_-]*$/u.test(code) || seen.has(code) || !text(item.label, 60) || !/^#[a-f0-9]{6}$/i.test(item.color)) throw new Error('Invalid category');
     seen.add(code);
     return { code, label: item.label.trim(), color: item.color };
+  }).sort((a, b) => {
+    const family = code => ({ F: 0, H: 1, R: 2 })[code.match(/^([FHR])(?: |$)/)?.[1]] ?? 3;
+    return family(a.code) - family(b.code) || a.code.localeCompare(b.code, 'de', { numeric: true });
   });
   if (!input.presets.every(item => text(item, 100))) throw new Error('Invalid preset');
   // Supply new fields for configurations saved before colors and vehicles existed.
@@ -30,13 +33,14 @@ function validateConfig(input) {
   }));
   const rawVehicles = input.vehicles === undefined ? defaults.vehicles : input.vehicles;
   if (!Array.isArray(rawVehicles) || rawVehicles.length > 40) throw new Error('Invalid vehicles');
-  const vehicles = rawVehicles.map(value => {
+  const vehicleCodes = rawVehicles.map(value => {
     if (typeof value !== 'string') throw new Error('Invalid vehicle');
     const code = value.trim().toUpperCase();
     if (!/^[A-Z0-9][A-Z0-9 /_-]{0,15}$/.test(code)) throw new Error('Invalid vehicle');
     return code;
   });
-  if (new Set(vehicles).size !== vehicles.length) throw new Error('Duplicate vehicle');
+  if (new Set(vehicleCodes).size !== vehicleCodes.length) throw new Error('Duplicate vehicle');
+  const vehicles = [...new Set(vehicleCodes.map(code => code === 'DLAK 23/12' ? 'DLA-K 23/12' : code))];
   const externalResources = input.externalResources === undefined ? defaults.externalResources : input.externalResources;
   if (!Array.isArray(externalResources) || externalResources.length > 40 || !externalResources.every(value => text(value, 80))) throw new Error('Invalid external resources');
   const captionTemplate = input.captionTemplate === undefined ? defaults.captionTemplate : input.captionTemplate;
