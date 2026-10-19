@@ -13,7 +13,11 @@ App: http://localhost:3000. No external packages or build step are required. To 
 
 ## Features
 
-- Enter incident details and select a category.
+- Choose between an incident report and an informative post.
+- Informative posts use a required headline (up to 160 characters), an optional note (up to 500 characters), and an optional image. Without an image, the text uses the available space. The team header, footer, colors, and background remain unchanged. Incident details and the incident caption are hidden in this mode.
+- Both post types support drafts, PNG/JPEG export, both resolutions, and image cropping. Text that does not fit blocks export.
+- Enter incident details and select a category. Categories are naturally sorted by F, H, R, then other keywords, including saved team settings.
+- The vehicle abbreviation `DLAK 23/12` is normalized to `DLA-K 23/12`, including existing team settings and vehicle selections in older drafts.
 - Use one short incident description and the tag color configured in the team settings.
 - Choose a JPG, PNG, or WebP image, or provide an HTTPS image URL with CORS support.
 - Move and zoom the photo within the fixed frame, or adjust it with the controls.

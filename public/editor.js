@@ -1,6 +1,6 @@
-import { normalizeCategoryCode } from './categories.js';
-import { renderPost, cropGeometry } from './renderer.js?v=20261008-text-color';
-import { layout } from './layout.js?v=20261008-text-color';
+import { normalizeCategoryCode, normalizeVehicleCode } from './categories.js';
+import { renderPost, cropGeometry } from './renderer.js?v=20261019-info-posts';
+import { layout } from './layout.js?v=20261019-info-posts';
 import { generateCaption, placeholders } from './caption.js';
 
 const $ = id => document.getElementById(id);
@@ -16,27 +16,43 @@ const today = () => {
   return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
 };
 const state = () => ({ ...Object.fromEntries(fields.map(id => [id, $(id).value])), crop: { ...crop }, vehicles: [...vehicles],
+  postType: $('post-type').value, headline: $('headline').value, infoText: $('info-text').value,
   captionTemplate: $('caption-template').value, hideEmptyLines: $('hide-empty-lines').checked });
 function notify(message) {
   $('toast').textContent = message; $('toast').hidden = false;
   clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').hidden = true; }, 4500);
 }
 function errorAt(id, message) { $(id).textContent = message; $(id).hidden = !message; }
+function updateMode() {
+  const info = $('post-type').value === 'info';
+  $('incident-fields').hidden = info; $('incident-fields').disabled = info;
+  $('info-fields').hidden = !info;
+  $('headline').disabled = !info; $('headline').required = info;
+  $('info-text').disabled = !info;
+  $('editor-heading').textContent = info ? 'Deine Information' : 'Dein Einsatz';
+  $('photo-heading').textContent = info ? 'Bild (optional)' : 'Einsatzbild';
+  $('caption-panel').hidden = info;
+  drag = null;
+}
+$('post-type').addEventListener('change', () => { updateMode(); render(); });
+['headline', 'info-text'].forEach(id => $(id).addEventListener('input', render));
+
 function render() {
   if (!config) return;
   warnings = renderPost($('preview'), state(), config, image, 1, backgroundImage);
   renderCaption();
   $('char-count').textContent = $('description').value.length + ' / 200';
   errorAt('render-warning', warnings.join(' '));
-  const valid = $('post-form').checkValidity() && !!image && !warnings.length && !busy;
+  $('headline').setCustomValidity($('post-type').value === 'info' && !$('headline').value.trim() ? 'Bitte eine Überschrift eingeben.' : '');
+  const valid = $('post-form').checkValidity() && (state().postType === 'info' || !!image) && !warnings.length && !busy;
   $('download').disabled = !valid; $('share').disabled = !valid;
-  $('export-help').textContent = warnings.length ? 'Bitte Text kürzen oder weniger Fahrzeuge auswählen. Der Export bleibt gesperrt.' : valid ? 'Alles bereit. Der Export entspricht genau dieser Vorschau.' : 'Einsatzdaten ausfüllen und ein Bild hinzufügen.';
+  $('export-help').textContent = warnings.length ? ($('post-type').value === 'info' ? 'Bitte Text kürzen. Der Export bleibt gesperrt.' : 'Bitte Text kürzen oder weniger Fahrzeuge auswählen. Der Export bleibt gesperrt.') : valid ? 'Alles bereit. Der Export entspricht genau dieser Vorschau.' : state().postType === 'info' ? 'Überschrift eingeben. Bild und Hinweistext sind optional.' : 'Einsatzdaten ausfüllen und ein Bild hinzufügen.';
   $('crop-controls').hidden = !image;
   $('preview').classList.toggle('has-image', !!image && crop.mode !== 'contain');
   $('image-fit').value = crop.mode || 'cover';
   $('crop-adjustments').hidden = crop.mode === 'contain';
   $('crop-help').textContent = crop.mode === 'contain'
-    ? 'Das gesamte Bild wird mittig gezeigt. Freie Flächen bleiben weiß; nichts wird abgeschnitten.'
+    ? 'Das gesamte Bild wird mittig gezeigt. Freie Flächen zeigen den Hintergrund; nichts wird abgeschnitten.'
     : 'Nur das Bild lässt sich in der Vorschau verschieben. Der Rahmen bleibt fest.';
   $('image-label').textContent = image ? imageName : 'Bild auswählen';
 }
@@ -89,7 +105,7 @@ async function loadConfiguredBackground() {
   }
 }
 function populateVehicles() {
-  vehicles = vehicles.filter(code => config.vehicles.includes(code));
+  vehicles = [...new Set(vehicles.map(normalizeVehicleCode))].filter(code => config.vehicles.includes(code));
   $('vehicle-options').replaceChildren(...config.vehicles.map(code => {
     const label = document.createElement('label'); label.className = 'vehicle-option';
     const input = document.createElement('input'); input.type = 'checkbox'; input.value = code; input.checked = vehicles.includes(code);
@@ -165,8 +181,8 @@ async function refreshDraft() {
   }
 }
 async function exportBlob() {
-  if (!$('post-form').reportValidity()) throw new Error('Bitte alle Einsatzdaten ausfüllen.');
-  if (!image) throw new Error('Bitte ein Einsatzbild hinzufügen.');
+  if (!$('post-form').reportValidity()) throw new Error('Bitte die erforderlichen Angaben ausfüllen.');
+  if ($('post-type').value !== 'info' && !image) throw new Error('Bitte ein Einsatzbild hinzufügen.');
   if (warnings.length) throw new Error('Bitte den Text kürzen.');
   const canvas = document.createElement('canvas');
   const exportWarnings = renderPost(canvas, state(), config, image, Number($('resolution').value), backgroundImage);
@@ -176,6 +192,10 @@ async function exportBlob() {
   return blob;
 }
 function filename() {
+  if ($('post-type').value === 'info') {
+    const title = $('headline').value.trim().replace(/[^\p{L}\p{N}_-]+/gu, '-').slice(0, 60);
+    return 'InfoPost-' + title + ($('file-format').value === 'image/jpeg' ? '.jpg' : '.png');
+  }
   return 'EinsatzPost-' + $('date').value + '-' + $('number').value + '-' + $('category').value + ($('file-format').value === 'image/jpeg' ? '.jpg' : '.png');
 }
 function populateTokens(containerId, textareaId) {
@@ -300,15 +320,17 @@ preview.addEventListener('pointermove', event => {
 
 $('reset').addEventListener('click', () => {
   if (!confirm('Aktuelle Eingaben und Bild zurücksetzen? Ein gespeicherter Entwurf bleibt erhalten.')) return;
-  $('post-form').reset(); $('date').value = today(); imageGeneration++; image = null; imageBlob = null; imageName = '';
+  const postType = $('post-type').value;
+  $('post-form').reset(); $('post-type').value = postType; updateMode(); $('date').value = today(); imageGeneration++; image = null; imageBlob = null; imageName = '';
   vehicles = []; populateVehicles();
   captionCustomized = false; $('caption-template').value = config.captionTemplate;
   $('hide-empty-lines').checked = true;
-  crop = { x: .5, y: .5, zoom: 1, mode: 'cover' }; syncCrop(); notify('Bereit für einen neuen Einsatz.');
+  crop = { x: .5, y: .5, zoom: 1, mode: 'cover' }; syncCrop(); notify('Bereit für einen neuen Beitrag.');
 });
 $('save-draft').addEventListener('click', async () => {
   try {
-    await draftOperation('readwrite', store => store.put({ state: state(), blob: imageBlob, name: imageName, savedAt: Date.now() }, 'current'));
+    const draft = { state: state(), blob: imageBlob, name: imageName, savedAt: Date.now() };
+    await draftOperation('readwrite', store => store.put(draft, 'current'));
     await refreshDraft(); notify('Entwurf auf diesem Gerät gespeichert.');
   } catch { notify('Entwurf konnte nicht gespeichert werden. Eventuell ist der Speicher voll.'); }
 });
@@ -317,6 +339,9 @@ $('load-draft').addEventListener('click', async () => {
   try {
     const draft = await draftOperation('readonly', store => store.get('current'));
     if (!draft) return notify('Kein Entwurf vorhanden.');
+    $('post-type').value = draft.state.postType === 'info' ? 'info' : 'incident';
+    $('headline').value = draft.state.headline ?? ''; $('info-text').value = draft.state.infoText ?? '';
+    updateMode();
     fields.forEach(id => { $(id).value = id === 'category' ? normalizeCategoryCode(draft.state[id]) : draft.state[id] ?? ''; });
     if (!config.categories.some(item => item.code === $('category').value)) $('category').value = config.categories[0].code;
     vehicles = Array.isArray(draft.state.vehicles) ? draft.state.vehicles : []; populateVehicles();
@@ -419,7 +444,7 @@ $('admin-form').addEventListener('submit', async event => {
 });
 
 async function initialize() {
-  $('date').value = today();
+  $('date').value = today(); updateMode();
   try {
     const response = await fetch('/api/config');
     if (!response.ok) throw new Error();
