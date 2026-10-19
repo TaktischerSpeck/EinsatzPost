@@ -241,3 +241,44 @@ test('vehicle wrapping preserves complete abbreviations and warns instead of tru
   for (const code of ['TLF 20/40 SL', 'DLAK 23/12', 'LF 16/12']) assert.ok(fit.lines.some(line => line.includes(code)));
   assert.equal(fitVehicleLines(context(), Array(40).fill('LONG VEHICLE 123'), layout.vehicles).overflow, true);
 });
+
+test('informative posts render with optional images and notes at both resolutions without incident data', async () => {
+  const { renderPost } = await load();
+  const { infoLayout } = await import('../public/layout.js');
+  for (const scale of [1, 2]) for (const image of [null, { width: 1600, height: 900 }]) for (const infoText of ['', 'Am Samstag ab 14 Uhr.\nWir freuen uns auf euch!']) {
+    const ctx = context(), texts = [], images = [];
+    ctx.fillText = (text, x, y) => texts.push({ text, x, y, color: ctx.fillStyle });
+    ctx.drawImage = (...args) => images.push(args);
+    const canvas = { getContext: () => ctx };
+    const state = { postType: 'info', headline: 'Tag der offenen Tür', infoText, number: '999', date: '2026-10-19', description: 'Incident only', category: 'F 1', vehicles: ['HLF20'], crop: { x: .5, y: .5, zoom: 1 } };
+    const config = { ...defaults, colors: { ...defaults.colors, text: '#334455' }, vehicles: ['HLF20'], descriptionUsesCategoryColor: true };
+    assert.deepEqual(renderPost(canvas, state, config, image, scale), []);
+    assert.equal(canvas.width, 1080 * scale); assert.equal(canvas.height, 1350 * scale);
+    assert.equal(images.length, image ? 1 : 0);
+    assert.ok(texts.some(item => item.text === 'INFORMATION'));
+    assert.ok(texts.some(item => item.text === config.footer));
+    const headline = texts.find(item => item.text === state.headline);
+    assert.equal(headline.y, infoLayout(Boolean(image)).headline.y);
+    assert.equal(headline.color, '#334455');
+    assert.ok(!texts.some(item => /EINSATZ|ALARMIERUNG|Fahrzeuge|DEIN EINSATZBILD|2026|Incident only|F 1/.test(item.text)));
+    if (infoText) {
+      assert.ok(texts.some(item => item.text === 'Am Samstag ab 14 Uhr.'));
+      assert.ok(texts.some(item => item.text === 'Wir freuen uns auf euch!'));
+    }
+    const boxes = infoLayout(Boolean(image));
+    assert.ok(boxes.headline.y + boxes.headline.height < boxes.text.y);
+    assert.ok(boxes.text.y + boxes.text.height < 1280);
+  }
+});
+
+test('informative text overflow is reported and old vehicle selections normalize to the current code', async () => {
+  const { renderPost } = await load();
+  const { normalizeVehicleCode } = await import('../public/categories.js');
+  assert.equal(normalizeVehicleCode('DLAK 23/12'), 'DLA-K 23/12');
+  assert.equal(normalizeVehicleCode('DLA-K 23/12'), 'DLA-K 23/12');
+  assert.equal(normalizeVehicleCode('HLF20'), 'HLF20');
+  for (const field of ['headline', 'infoText']) {
+    const state = { postType: 'info', headline: 'Hinweis', [field]: 'W'.repeat(3000), crop: {} };
+    assert.ok(renderPost({ getContext: context }, state, defaults, null).length > 0);
+  }
+});
