@@ -22,7 +22,9 @@ App: http://localhost:3000. No external packages or build step are required. To 
 - Choose a JPG, PNG, or WebP image, or provide an HTTPS image URL with CORS support.
 - Move and zoom the photo within the fixed frame, or adjust it with the controls.
 - Automatic text sizing; text overflow disables export.
-- Export PNG and JPEG images at 1080 × 1350 or 2160 × 2700 pixels.
+- Export PNG and JPEG images at 1080 × 1350 or 2160 × 2700 pixels. High quality (2160 × 2700) and lossless PNG are selected by default.
+- The graphic date includes the trailing month period, for example `12.10.`.
+- Text fitting and overflow checks reserve the same generous line spacing used by the preview and export.
 - One local draft, including its image, is stored per browser.
 - Admin settings for the name, footer, categories, colors, and text suggestions.
 
