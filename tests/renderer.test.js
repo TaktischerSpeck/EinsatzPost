@@ -75,7 +75,7 @@ test('contain preserves background margins and uses identical geometry in both e
 });
 test('renders custom backgrounds, selected vehicles, matched header sizes and a yearless date', async () => {
   const { renderPost, dateLabel } = await load();
-  assert.equal(dateLabel('2026-10-05'), '05.10');
+  assert.equal(dateLabel('2026-10-05'), '05.10.');
   const config = structuredClone(defaults);
   config.colors = { background: '#112233', header: '#eeeeee', footer: '#abcdef' };
   config.vehicles = ['HLF20', 'ELW', 'DLK23/12'];
@@ -88,7 +88,7 @@ test('renders custom backgrounds, selected vehicles, matched header sizes and a 
     for (const color of Object.values(config.colors)) assert.ok(fills.some(fill => fill.color === color));
     const year = texts.find(text => text.args[0] === '2026');
     assert.deepEqual(year.args, ['2026', 1020, 59]); assert.match(year.font, /30px/);
-    assert.ok(texts.some(text => JSON.stringify(text.args) === '["05.10",1020,132]'));
+    assert.ok(texts.some(text => JSON.stringify(text.args) === '["05.10.",1020,132]'));
     assert.ok(!texts.some(text => text.args[0] === '05.10.2026'));
     assert.ok(texts.some(text => text.args[0] === 'Fahrzeuge: HLF20 · ELW'));
     assert.ok(!texts.some(text => text.args[0].includes('UNKNOWN')));
@@ -132,7 +132,7 @@ test('header pairs use identical fitted font sizes and the accent bar is 1.5 tim
     assert.deepEqual(renderPost({ getContext: () => ctx }, state, { ...defaults, brand }, null), []);
     const year = texts.find(item => item.text === '2026');
     const name = texts.find(item => item.text === brand.toUpperCase());
-    const date = texts.find(item => item.text === '07.10');
+    const date = texts.find(item => item.text === '07.10.');
     const number = texts.find(item => item.text === 'EINSATZ 123456');
     assert.equal(year.font, name.font); assert.equal(year.y, name.y);
     assert.equal(date.font, number.font); assert.equal(date.y, number.y);
@@ -281,4 +281,43 @@ test('informative text overflow is reported and old vehicle selections normalize
     const state = { postType: 'info', headline: 'Hinweis', [field]: 'W'.repeat(3000), crop: {} };
     assert.ok(renderPost({ getContext: context }, state, defaults, null).length > 0);
   }
+});
+
+test('readable line spacing is used for fitting and rendering at both export sizes', async () => {
+  const { fitText, fitVehicleLines, renderPost, dateLabel } = await load();
+  const { layout, infoLayout } = await import('../public/layout.js');
+  assert.equal(dateLabel('2026-10-12'), '12.10.');
+  assert.equal(dateLabel(''), 'Datum auswählen');
+  const box = { width: 300, height: 96, maxSize: 40, minSize: 20, maxLines: 2, lineHeight: 1.5 };
+  const fit = fitText(context(), 'First line\nSecond line', box);
+  assert.equal(fit.overflow, false);
+  assert.ok(fit.lines.length * fit.size * box.lineHeight <= box.height);
+  assert.ok(fit.size < box.maxSize);
+  const vehicles = ['PKW', 'MTW', 'KDOW', 'ELW', 'TLF 20/40 SL', 'DLA-K 23/12', 'HLF20', 'LF 16/12', 'GW-L'];
+  const vehicleFit = fitVehicleLines(context(), vehicles, { ...layout.vehicles, height: 70 });
+  assert.equal(vehicleFit.overflow, false);
+  assert.ok(vehicleFit.lines.length * vehicleFit.size * layout.vehicles.lineHeight <= 70);
+  for (const scale of [1, 2]) {
+    const ctx = context(), texts = [];
+    ctx.fillText = (text, x, y) => texts.push({ text, y, font: ctx.font });
+    const state = { number: '123', date: '2026-10-12', category: 'F 1', description: 'Patientenrettung\nmittels Drehleiter', vehicles, crop: {} };
+    assert.deepEqual(renderPost({ getContext: () => ctx }, state, { ...defaults, vehicles }, null, scale), []);
+    const description = texts.filter(item => ['Patientenrettung', 'mittels Drehleiter'].includes(item.text));
+    assert.equal(description.length, 2);
+    const size = parseFloat(description[0].font.split(' ')[1]);
+    assert.equal(description[1].y - description[0].y, size * layout.description.lineHeight);
+    const lines = texts.filter(item => item.y >= layout.vehicles.y && item.y < layout.vehicles.y + layout.vehicles.height);
+    assert.equal(lines.length, 2);
+    assert.equal(lines[1].y - lines[0].y, 32 * layout.vehicles.lineHeight);
+    assert.ok(lines.every(item => item.font.startsWith('400 ')));
+  }
+  for (const hasImage of [false, true]) assert.equal(infoLayout(hasImage).text.lineHeight, 1.5);
+});
+
+test('editor initially selects high quality PNG export', () => {
+  const html = require('node:fs').readFileSync(require.resolve('../public/index.html'), 'utf8');
+  const resolution = html.match(/<select id="resolution">([\s\S]*?)<\/select>/)[1];
+  assert.match(resolution, /<option value="2" selected>/);
+  assert.doesNotMatch(resolution, /<option value="1" selected>/);
+  assert.match(html, /<select id="file-format"><option value="image\/png">/);
 });

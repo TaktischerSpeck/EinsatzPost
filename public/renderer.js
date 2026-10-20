@@ -1,5 +1,5 @@
 import { normalizeCategoryCode } from './categories.js';
-import { layout, infoLayout } from './layout.js?v=20261019-info-posts';
+import { layout, infoLayout } from './layout.js?v=20261020-readability';
 import { drawBackground } from './background.js';
 const fontFamily = 'Arial, Helvetica, sans-serif';
 export function wrapText(ctx, text, width) {
@@ -22,10 +22,11 @@ export function wrapText(ctx, text, width) {
   return lines;
 }
 export function fitText(ctx, text, box, weight = 700) {
+  ctx.letterSpacing = (box.letterSpacing ?? 0) + 'px';
   for (let size = box.maxSize; size >= box.minSize; size--) {
     ctx.font = weight + ' ' + size + 'px ' + fontFamily;
     const lines = box.maxLines === 1 ? [String(text)] : wrapText(ctx, text, box.width);
-    if (lines.length <= box.maxLines && lines.length * size * 1.15 <= box.height && lines.every(line => ctx.measureText(line).width <= box.width)) return { size, lines, overflow: false };
+    if (lines.length <= box.maxLines && lines.length * size * (box.lineHeight ?? 1.2) <= box.height && lines.every(line => ctx.measureText(line).width <= box.width)) return { size, lines, overflow: false };
   }
   ctx.font = weight + ' ' + box.minSize + 'px ' + fontFamily;
   return { size: box.minSize, lines: wrapText(ctx, text, box.width).slice(0, box.maxLines), overflow: true };
@@ -38,14 +39,15 @@ function drawText(ctx, text, box, color, warnings, weight = 700) {
   if (box.contrast) { ctx.shadowColor = readableColor(color) + '99'; ctx.shadowBlur = 2; }
   ctx.textAlign = box.align || 'left';
   const x = box.align === 'right' ? box.x + box.width : box.align === 'center' ? box.x + box.width / 2 : box.x;
-  fit.lines.forEach((line, i) => ctx.fillText(line, x, box.y + i * fit.size * 1.15));
+  fit.lines.forEach((line, i) => ctx.fillText(line, x, box.y + i * fit.size * (box.lineHeight ?? 1.2)));
   ctx.restore();
   return fit;
 }
 export function fitVehicleLines(ctx, vehicles, box) {
+  ctx.letterSpacing = (box.letterSpacing ?? 0) + 'px';
   // Wrap between complete vehicle abbreviations; keep separators inside each line.
   for (let size = box.maxSize; size >= box.minSize; size--) {
-    ctx.font = '600 ' + size + 'px ' + fontFamily;
+    ctx.font = '400 ' + size + 'px ' + fontFamily;
     const lines = []; let line = 'Fahrzeuge: ';
     for (const vehicle of vehicles) {
       const candidate = line + (line === 'Fahrzeuge: ' ? '' : ' · ') + vehicle;
@@ -54,7 +56,7 @@ export function fitVehicleLines(ctx, vehicles, box) {
       } else line = candidate;
     }
     lines.push(line);
-    if (lines.length <= 2 && lines.every(text => ctx.measureText(text).width <= box.width)) return { size, lines, overflow: false };
+    if (lines.length <= box.maxLines && lines.length * size * (box.lineHeight ?? 1.2) <= box.height && lines.every(text => ctx.measureText(text).width <= box.width)) return { size, lines, overflow: false };
   }
   return { size: box.minSize, lines: [], overflow: true };
 }
@@ -70,7 +72,7 @@ export function cropGeometry(image, crop) {
   return { x: box.x - (width - box.width) * crop.x, y: box.y - (height - box.height) * crop.y, width, height };
 }
 export function dateLabel(value) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value.slice(5).split('-').reverse().join('.') : 'Datum auswählen';
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value.slice(5).split('-').reverse().join('.') + '.' : 'Datum auswählen';
 }
 function readableColor(hex) {
   const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255).map(v => v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4);
@@ -87,7 +89,7 @@ export function renderPost(canvas, state, config, image, scale = 1, backgroundIm
   if (config.background?.imageData && !backgroundImage) warnings.push('Hintergrundbild konnte noch nicht geladen werden.');
   ctx.fillStyle = colors.header; ctx.fillRect(0, 0, layout.width, 245);
   ctx.fillStyle = info ? colors.footer : category.color; ctx.fillRect(0, 0, layout.width, 18);
-  const brand = drawText(ctx, config.brand.toUpperCase(), { x: 60, y: 59, width: 690, height: 45, maxSize: 30, minSize: 14, maxLines: 1 }, headerText, warnings);
+  const brand = drawText(ctx, config.brand.toUpperCase(), { x: 60, y: 59, width: 690, height: 45, maxSize: 30, minSize: 14, maxLines: 1, letterSpacing: .8 }, headerText, warnings);
   if (info) {
     drawText(ctx, 'INFORMATION', { x: 60, y: 132, width: 960, height: 65, maxSize: 52, minSize: 24, maxLines: 1 }, headerText, warnings);
   } else {
@@ -131,11 +133,11 @@ export function renderPost(canvas, state, config, image, scale = 1, backgroundIm
     if (selectedVehicles.length) {
       const box = bodyBox(layout.vehicles), fit = fitVehicleLines(ctx, selectedVehicles, box);
       if (fit.overflow) warnings.push('Zu viele Fahrzeuge für zwei Zeilen. Bitte weniger Fahrzeuge auswählen.');
-      fit.lines.forEach((line, index) => drawText(ctx, line, { ...box, y: box.y + index * fit.size * 1.15, height: fit.size * 1.15, maxSize: fit.size, minSize: fit.size, maxLines: 1 }, box.color, warnings, 600));
+      fit.lines.forEach((line, index) => drawText(ctx, line, { ...box, y: box.y + index * fit.size * (box.lineHeight ?? 1.2), height: fit.size * (box.lineHeight ?? 1.2), maxSize: fit.size, minSize: fit.size, maxLines: 1 }, box.color, warnings, 400));
     }
     const detailsColor = bodyBox(layout.time).color;
     ctx.strokeStyle = detailsColor; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(60, 1135); ctx.lineTo(1020, 1135); ctx.stroke();
-    const label = { contrast: Boolean(backgroundImage || config.background?.gradientEnabled), y: 1155, height: 28, maxSize: 24, minSize: 18, maxLines: 1 };
+    const label = { contrast: Boolean(backgroundImage || config.background?.gradientEnabled), y: 1155, height: 30, maxSize: 22, minSize: 18, maxLines: 1, letterSpacing: .8 };
     drawText(ctx, 'ALARMIERUNG', { ...label, x: layout.time.x, width: layout.time.width }, detailsColor, warnings);
     drawText(ctx, 'EINSATZORT', { ...label, x: layout.location.x, width: layout.location.width, align: 'center' }, detailsColor, warnings);
     drawText(ctx, state.time ? state.time + ' Uhr' : '—', bodyBox(layout.time), bodyBox(layout.time).color, warnings);
