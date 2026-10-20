@@ -2,7 +2,7 @@
 export const layout = Object.freeze({
   width: 1080, height: 1350, margin: 60,
   photo: { x: 60, y: 272, width: 960, height: 566 },
-  description: { x: 60, y: 901, width: 960, height: 108, maxSize: 54, minSize: 28, maxLines: 2, lineHeight: 1.25 },
+  description: { x: 60, y: 901, width: 960, height: 108, maxSize: 54, minSize: 28, maxLines: 2, lineHeight: 1.25, letterSpacingEm: .04 },
   vehicles: { x: 60, y: 1035, width: 960, height: 80, maxSize: 32, minSize: 18, maxLines: 2, lineHeight: 1.25 },
   location: { x: 720, y: 1199, width: 300, height: 76, maxSize: 36, minSize: 18, maxLines: 2, lineHeight: 1.3, align: 'center' },
   time: { x: 60, y: 1199, width: 300, height: 76, maxSize: 36, minSize: 20, maxLines: 1 },
