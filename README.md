@@ -24,7 +24,7 @@ App: http://localhost:3000. No external packages or build step are required. To 
 - Automatic text sizing; text overflow disables export.
 - Export PNG and JPEG images at 1080 × 1350 or 2160 × 2700 pixels. High quality (2160 × 2700) and lossless PNG are selected by default.
 - The graphic date includes the trailing month period, for example `12.10.`.
-- Text fitting and overflow checks reserve the same generous line spacing used by the preview and export.
+- Text fitting and overflow checks reserve the same generous line spacing used by the preview and export. Text also uses size-relative letter spacing: 0.04 em for incident descriptions, 0.05 em for the team name and detail labels, and 0.035 em elsewhere. Tracking is included in fitting, wrapping, and category tag sizing.
 - One local draft, including its image, is stored per browser.
 - Admin settings for the name, footer, categories, colors, and text suggestions.
 

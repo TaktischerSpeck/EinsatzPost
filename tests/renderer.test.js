@@ -321,3 +321,42 @@ test('editor initially selects high quality PNG export', () => {
   assert.doesNotMatch(resolution, /<option value="1" selected>/);
   assert.match(html, /<select id="file-format"><option value="image\/png">/);
 });
+
+test('letter spacing participates in fitting, wrapping, tags and both export sizes', async () => {
+  const { fitText, fitVehicleLines, renderPost } = await load();
+  const { layout } = await import('../public/layout.js');
+  function trackedContext() {
+    const ctx = context();
+    ctx.measureText = function (text) {
+      const count = [...text].length, size = parseFloat(this.font.split(' ')[1]);
+      return { width: count * (size * .6 + parseFloat(this.letterSpacing || 0)) };
+    };
+    return ctx;
+  }
+  const box = { width: 250, height: 100, minSize: 12, maxSize: 40, maxLines: 1 };
+  const plain = fitText(trackedContext(), 'RETTUNGSDIENST', { ...box, letterSpacing: 0 });
+  const ctx = trackedContext(), spaced = fitText(ctx, 'RETTUNGSDIENST', box);
+  assert.ok(spaced.size < plain.size);
+  assert.equal(parseFloat(ctx.letterSpacing), spaced.size * .035);
+  assert.ok(ctx.measureText('RETTUNGSDIENST').width <= box.width);
+  const vehicles = ['PKW', 'MTW', 'KDOW', 'ELW', 'TLF 20/40 SL', 'DLA-K 23/12', 'HLF20', 'LF 16/12', 'GW-L'];
+  const vehicleCtx = trackedContext(), vehicleFit = fitVehicleLines(vehicleCtx, vehicles, layout.vehicles);
+  assert.equal(vehicleFit.overflow, false);
+  assert.ok(vehicleFit.lines.every(line => vehicleCtx.measureText(line).width <= layout.vehicles.width));
+  for (const scale of [1, 2]) for (const category of defaults.categories) {
+    const ctx = trackedContext(), texts = [], fills = [];
+    ctx.fillText = (text, x, y) => texts.push({ text, x, y, font: ctx.font, spacing: parseFloat(ctx.letterSpacing) });
+    ctx.fillRect = (...args) => fills.push(args);
+    const state = { number: '123', date: '2026-10-20', category: category.code, description: 'Türöffnung für den Rettungsdienst', vehicles, time: '21:06', location: 'Ober-Ramstadt', crop: {} };
+    assert.deepEqual(renderPost({ getContext: () => ctx }, state, { ...defaults, vehicles }, null, scale), []);
+    const description = texts.filter(item => item.y >= layout.description.y && item.y < layout.vehicles.y);
+    assert.ok(description.length > 0);
+    assert.ok(description.every(item => item.spacing === parseFloat(item.font.split(' ')[1]) * .04));
+    assert.ok(texts.filter(item => item.text.startsWith('Fahrzeuge:')).every(item => item.spacing > 0));
+    const tag = fills.find(args => args[0] === 84 && args[1] === 752);
+    const text = texts.find(item => item.text === category.code);
+    ctx.font = text.font; ctx.letterSpacing = text.spacing + 'px';
+    assert.ok(ctx.measureText(text.text).width <= tag[2] - 24);
+    assert.ok(tag[0] + tag[2] <= 1020);
+  }
+});

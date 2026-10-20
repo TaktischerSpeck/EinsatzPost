@@ -1,6 +1,6 @@
 import { normalizeCategoryCode, normalizeVehicleCode } from './categories.js';
-import { renderPost, cropGeometry } from './renderer.js?v=20261020-readability';
-import { layout } from './layout.js?v=20261020-readability';
+import { renderPost, cropGeometry } from './renderer.js?v=20261020-letter-spacing';
+import { layout } from './layout.js?v=20261020-letter-spacing';
 import { generateCaption, placeholders } from './caption.js';
 
 const $ = id => document.getElementById(id);
