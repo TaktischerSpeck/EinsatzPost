@@ -1,7 +1,12 @@
 import { normalizeCategoryCode } from './categories.js';
-import { layout, infoLayout } from './layout.js?v=20261020-readability';
+import { layout, infoLayout } from './layout.js?v=20261020-letter-spacing';
 import { drawBackground } from './background.js';
 const fontFamily = 'Arial, Helvetica, sans-serif';
+function setTextFont(ctx, size, weight, box = {}) {
+  ctx.font = weight + ' ' + size + 'px ' + fontFamily;
+  // Resolve tracking at the fitted size so measuring and drawing stay identical.
+  ctx.letterSpacing = (box.letterSpacing ?? size * (box.letterSpacingEm ?? .035)) + 'px';
+}
 export function wrapText(ctx, text, width) {
   if (String(text).includes('\n')) return String(text).split('\n').flatMap(line => line.trim() ? wrapText(ctx, line, width) : ['']);
   const lines = []; let line = '';
@@ -22,13 +27,12 @@ export function wrapText(ctx, text, width) {
   return lines;
 }
 export function fitText(ctx, text, box, weight = 700) {
-  ctx.letterSpacing = (box.letterSpacing ?? 0) + 'px';
   for (let size = box.maxSize; size >= box.minSize; size--) {
-    ctx.font = weight + ' ' + size + 'px ' + fontFamily;
+    setTextFont(ctx, size, weight, box);
     const lines = box.maxLines === 1 ? [String(text)] : wrapText(ctx, text, box.width);
     if (lines.length <= box.maxLines && lines.length * size * (box.lineHeight ?? 1.2) <= box.height && lines.every(line => ctx.measureText(line).width <= box.width)) return { size, lines, overflow: false };
   }
-  ctx.font = weight + ' ' + box.minSize + 'px ' + fontFamily;
+  setTextFont(ctx, box.minSize, weight, box);
   return { size: box.minSize, lines: wrapText(ctx, text, box.width).slice(0, box.maxLines), overflow: true };
 }
 function drawText(ctx, text, box, color, warnings, weight = 700) {
@@ -44,10 +48,9 @@ function drawText(ctx, text, box, color, warnings, weight = 700) {
   return fit;
 }
 export function fitVehicleLines(ctx, vehicles, box) {
-  ctx.letterSpacing = (box.letterSpacing ?? 0) + 'px';
   // Wrap between complete vehicle abbreviations; keep separators inside each line.
   for (let size = box.maxSize; size >= box.minSize; size--) {
-    ctx.font = '400 ' + size + 'px ' + fontFamily;
+    setTextFont(ctx, size, 400, box);
     const lines = []; let line = 'Fahrzeuge: ';
     for (const vehicle of vehicles) {
       const candidate = line + (line === 'Fahrzeuge: ' ? '' : ' · ') + vehicle;
@@ -89,7 +92,7 @@ export function renderPost(canvas, state, config, image, scale = 1, backgroundIm
   if (config.background?.imageData && !backgroundImage) warnings.push('Hintergrundbild konnte noch nicht geladen werden.');
   ctx.fillStyle = colors.header; ctx.fillRect(0, 0, layout.width, 245);
   ctx.fillStyle = info ? colors.footer : category.color; ctx.fillRect(0, 0, layout.width, 18);
-  const brand = drawText(ctx, config.brand.toUpperCase(), { x: 60, y: 59, width: 690, height: 45, maxSize: 30, minSize: 14, maxLines: 1, letterSpacing: .8 }, headerText, warnings);
+  const brand = drawText(ctx, config.brand.toUpperCase(), { x: 60, y: 59, width: 690, height: 45, maxSize: 30, minSize: 14, maxLines: 1, letterSpacingEm: .05 }, headerText, warnings);
   if (info) {
     drawText(ctx, 'INFORMATION', { x: 60, y: 132, width: 960, height: 65, maxSize: 52, minSize: 24, maxLines: 1 }, headerText, warnings);
   } else {
@@ -121,7 +124,7 @@ export function renderPost(canvas, state, config, image, scale = 1, backgroundIm
     drawText(ctx, state.headline || 'Deine Überschrift', { ...boxes.headline, contrast }, textColor, warnings);
     if ((state.infoText || '').trim()) drawText(ctx, state.infoText.trim(), { ...boxes.text, contrast }, textColor, warnings, 400);
   } else {
-    ctx.font = '700 32px ' + fontFamily;
+    setTextFont(ctx, 32, 700);
     const tagWidth = Math.min(photo.width - 48, Math.max(126, Math.ceil(ctx.measureText(category.code).width) + 48));
     ctx.fillStyle = category.color; ctx.fillRect(84, 752, tagWidth, 62);
     drawText(ctx, category.code, { x: 96, y: 765, width: tagWidth - 24, height: 40, maxSize: 32, minSize: 14, maxLines: 1, align: 'center' }, readableColor(category.color), warnings);
@@ -137,7 +140,7 @@ export function renderPost(canvas, state, config, image, scale = 1, backgroundIm
     }
     const detailsColor = bodyBox(layout.time).color;
     ctx.strokeStyle = detailsColor; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(60, 1135); ctx.lineTo(1020, 1135); ctx.stroke();
-    const label = { contrast: Boolean(backgroundImage || config.background?.gradientEnabled), y: 1155, height: 30, maxSize: 22, minSize: 18, maxLines: 1, letterSpacing: .8 };
+    const label = { contrast: Boolean(backgroundImage || config.background?.gradientEnabled), y: 1155, height: 30, maxSize: 22, minSize: 18, maxLines: 1, letterSpacingEm: .05 };
     drawText(ctx, 'ALARMIERUNG', { ...label, x: layout.time.x, width: layout.time.width }, detailsColor, warnings);
     drawText(ctx, 'EINSATZORT', { ...label, x: layout.location.x, width: layout.location.width, align: 'center' }, detailsColor, warnings);
     drawText(ctx, state.time ? state.time + ' Uhr' : '—', bodyBox(layout.time), bodyBox(layout.time).color, warnings);
